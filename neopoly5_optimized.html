@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>NeoPoly 5 Optimisé</title>
+    <style>
+        :root {
+            --bg: #080c18;
+            --accent: #22c55e;
+            --text: #e5e7eb;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .modal {
+            background: #111;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .swatch-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 10px 0;
+        }
+        .swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .swatch.selected {
+            border-color: var(--accent);
+        }
+        .emoji-swatch {
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background: #111;
+            border-radius: 8px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Modal d'ajout de joueur -->
+    <div class="modal" id="add-player-modal">
+        <h2>Ajouter un joueur</h2>
+        <div>
+            <label>Pseudo</label>
+            <input id="player-name" placeholder="Nom du joueur">
+        </div>
+
+        <div>
+            <label>Emoji</label>
+            <div class="swatch-container" id="emoji-selector">
+                <!-- Emojis générés par JS -->
+            </div>
+        </div>
+
+        <div>
+            <label>Couleur</label>
+            <div class="swatch-container" id="color-selector">
+                <!-- Couleurs générées par JS -->
+            </div>
+        </div>
+
+        <button onclick="addPlayer()">Ajouter</button>
+    </div>
+
+    <!-- Système de chat -->
+    <div id="chat-container">
+        <div id="chat-messages" style="height: 200px; overflow-y: auto; margin-bottom: 10px;"></div>
+        <input id="chat-input" placeholder="Votre message..." style="width: 100%; padding: 8px; border-radius: 4px; border: none;">
+        <button onclick="sendMessage()" style="margin-top: 5px;">Envoyer</button>
+    </div>
+
+    <script>
+        // Configuration
+        const GAME_CONFIG = {
+            emojis: ['🐱', '🦊', '🐶', '🦁', '🐼', '🦄', '🐧', '🐨'],
+            colors: ['#3b82f6', '#ef4444', '#facc15', '#a855f7', '#22c55e', '#f97316']
+        };
+
+        // État du jeu
+        const G = {
+            players: [],
+            chatMessages: []
+        };
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            buildEmojiSelector();
+            buildColorSelector();
+        });
+
+        // Générateurs de sélecteurs
+        function buildEmojiSelector() {
+            const container = document.getElementById('emoji-selector');
+            container.innerHTML = GAME_CONFIG.emojis.map(emoji =>
+                `<div class="swatch emoji-swatch" onclick="selectEmoji('${emoji}')">${emoji}</div>`
+            ).join('');
+            selectEmoji(GAME_CONFIG.emojis[0]);
+        }
+
+        function buildColorSelector() {
+            const container = document.getElementById('color-selector');
+            container.innerHTML = GAME_CONFIG.colors.map(color =>
+                `<div class="swatch" style="background:${color}" onclick="selectColor('${color}')"></div>`
+            ).join('');
+            selectColor(GAME_CONFIG.colors[0]);
+        }
+
+        // Sélection
+        let selectedEmoji = GAME_CONFIG.emojis[0];
+        let selectedColor = GAME_CONFIG.colors[0];
+
+        function selectEmoji(emoji) {
+            selectedEmoji = emoji;
+            updateSelected('.emoji-swatch');
+        }
+
+        function selectColor(color) {
+            selectedColor = color;
+            updateSelected('.swatch:not(.emoji-swatch)');
+        }
+
+        function updateSelected(selector) {
+            document.querySelectorAll(selector).forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        // Gestion des joueurs
+        function addPlayer() {
+            const name = document.getElementById('player-name').value.trim();
+            if (!name) return;
+
+            G.players.push({
+                id: 'P' + Date.now(),
+                name,
+                emoji: selectedEmoji,
+                color: selectedColor,
+                money: 1500
+            });
+
+            document.getElementById('player-name').value = '';
+            alert(`Joueur ${name} ajouté!`);
+        }
+
+        // Système de chat
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            G.chatMessages.push({
+                text: message,
+                player: G.players[0]?.name || 'Joueur'
+            });
+
+            input.value = '';
+            updateChat();
+        }
+
+        function updateChat() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = G.chatMessages.map(msg =>
+                `<div><strong>${msg.player}:</strong> ${msg.text}</div>`
+            ).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+</html>
