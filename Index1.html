@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>NeoPoly v3</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{
+  --bg:#080c18;--s1:#0d1525;--s2:#111827;--s3:#1a2235;
+  --accent:#22c55e;--ag:rgba(34,197,94,.3);
+  --blue:#3b82f6;--yellow:#facc15;--red:#ef4444;--purple:#a855f7;
+  --text:#e5e7eb;--muted:#9ca3af;--border:rgba(148,163,184,.18);
+  --r:14px;--r2:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text)}
+
+/* ── SCREENS ── */
+.screen{display:none;position:fixed;inset:0;z-index:10}
+.screen.active{display:flex}
+
+/* ── LOBBY ── */
+#lobby{flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 0%,#0d2a1a 0%,#080c18 60%)}
+.lobby-logo{font-size:3.5rem;font-weight:900;letter-spacing:.06em;
+  background:linear-gradient(135deg,#22c55e,#0ea5e9,#a855f7);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;margin-bottom:6px}
+.lobby-sub{color:var(--muted);font-size:.9rem;margin-bottom:48px;letter-spacing:.12em;text-transform:uppercase}
+.lobby-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.lobby-card{
+  background:rgba(13,21,37,.9);border:1px solid var(--border);border-radius:20px;
+  padding:28px 32px;width:260px;cursor:pointer;
+  transition:all .2s;text-align:center;
+  box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.lobby-card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 16px 50px rgba(34,197,94,.2)}
+.lobby-card-icon{font-size:2.8rem;margin-bottom:12px}
+.lobby-card-title{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.lobby-card-desc{font-size:.76rem;color:var(--muted);line-height:1.5}
+.lobby-version{position:fixed;bottom:16px;font-size:.7rem;color:rgba(148,163,184,.4)}
+
+/* ── MODALS ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+  z-index:50;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#0d1525;border:1px solid rgba(148,163,184,.25);border-radius:22px;
+  padding:28px;width:min(440px,95vw);animation:pop .2s ease;
+  box-shadow:0 30px 80px rgba(0,0,0,.8)}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-title{font-size:1.15rem;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:.78rem;color:var(--muted);margin-bottom:20px}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;
+  color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px}
+.modal-close:hover{color:var(--text)}
+.modal{position:relative}
+
+/* ── FORM ── */
+.fgroup{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.frow{display:flex;gap:8px}
+.frow>*{flex:1}
+label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:3px}
+input,select,textarea{
+  width:100%;padding:8px 12px;border-radius:var(--r2);
+  border:1px solid rgba(55,65,81,.8);background:rgba(6,9,15,.9);
+  color:var(--text);font-size:.82rem;outline:none;
+  transition:border-color .12s,box-shadow .12s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--ag)}
+select option{background:#0d1525}
+textarea{resize:vertical;min-height:60px;font-family:monospace;font-size:.7rem}
+
+/* ── BUTTONS ── */
+.btn{border-radius:999px;padding:9px 18px;font-size:.8rem;font-weight:600;
+  border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;
+  gap:7px;transition:all .14s;background:transparent;color:var(--text)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+.btn-sm{padding:5px 12px;font-size:.72rem}
+.btn-xs{padding:3px 8px;font-size:.66rem}
+.btn-primary{background:linear-gradient(135deg,#16a34a,#22c55e);color:#022c22;
+  border-color:rgba(187,247,208,.4);box-shadow:0 4px 18px rgba(34,197,94,.35)}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 28px rgba(34,197,94,.45)}
+.btn-secondary{background:rgba(30,41,59,.8);border-color:rgba(148,163,184,.3);color:var(--muted)}
+.btn-secondary:hover:not(:disabled){background:rgba(30,41,59,1);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4);color:#fca5a5}
+.btn-danger:hover:not(:disabled){background:rgba(239,68,68,.2)}
+.btn-blue{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.4);color:#93c5fd}
+.btn-blue:hover:not(:disabled){background:rgba(59,130,246,.25)}
+.btn-yellow{background:rgba(250,204,21,.12);border-color:rgba(250,204,21,.4);color:#fde68a}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+
+/* ── GAME LAYOUT ── */
+#game{flex-direction:row;overflow:hidden;height:100vh}
+
+/* ── BOARD AREA ── */
+.board-area{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:16px;overflow:hidden;
+  background:radial-gradient(ellipse at center,#0a1a2e 0%,#080c18 100%)}
+
+/* ── THE BOARD ── */
+.board{
+  display:grid;grid-template:repeat(11,1fr)/repeat(11,1fr);
+  width:min(640px,calc(100vw - 400px));aspect-ratio:1/1;
+  border:2px solid rgba(148,163,184,.3);border-radius:18px;overflow:hidden;
+  box-shadow:0 0 100px rgba(0,0,0,.9),0 0 40px rgba(34,197,94,.05);
+  background:#04070e}
+@media(max-width:1100px){.board{width:min(520px,95vw)}}
+
+/* CENTER */
+.board-center{
+  grid-row:2/11;grid-column:2/11;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:10px;
+  border:1px dashed rgba(148,163,184,.2);margin:3px;border-radius:12px;
+  background:radial-gradient(ellipse at center,#060d1a,#04070e)}
+.board-center-logo{font-size:min(2rem,3vw);font-weight:900;
+  background:linear-gradient(135deg,#22c55e,#0ea5e9);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent}
+.board-center-sub{font-size:min(.62rem,1.2vw);color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-top:3px}
+.board-center-info{margin-top:12px;font-size:min(.68rem,1.1vw);color:var(--muted)}
+
+/* CELLS */
+.cell{
+  position:relative;border:1px solid rgba(20,30,50,.95);background:#04070e;
+  display:flex;flex-direction:column;overflow:hidden;cursor:pointer;
+  transition:background .12s,border-color .12s,transform .1s,z-index 0s}
+.cell:hover{background:rgba(20,35,60,.9);border-color:rgba(148,163,184,.7);transform:scale(1.06);z-index:5}
+.cell.selected{border-color:var(--accent)!important;box-shadow:inset 0 0 0 1px var(--accent)}
+
+/* color strip at top */
+.cell-strip{height:5px;flex-shrink:0;border-radius:0}
+/* corner cells bigger strip */
+.cell.corner .cell-strip{height:0}
+.cell.corner{background:radial-gradient(circle at center,#0e1d32,#04070e)}
+
+.cell-icon{font-size:min(.9rem,1.4vw);text-align:center;line-height:1.2;padding:1px}
+.cell-name{
+  font-size:min(.45rem,0.7vw);font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;line-height:1.2;padding:1px 2px;
+  flex:1;color:rgba(156,163,175,.9);word-break:break-word}
+.cell.corner .cell-name{font-size:min(.5rem,.9vw);color:var(--text);text-align:center}
+.cell-price{font-size:min(.42rem,.7vw);color:#6b7280;padding:0 2px 1px;text-align:right}
+
+/* type-based name colors */
+.cell.type-tax .cell-name{color:#f97316}
+.cell.type-chance .cell-name{color:#a78bfa}
+.cell.type-community .cell-name{color:#38bdf8}
+.cell.type-railroad .cell-name{color:#d4d4d4}
+.cell.type-jail .cell-name{color:#fca5a5}
+.cell.type-gotojail .cell-name{color:#ef4444}
+.cell.type-parking .cell-name{color:#facc15}
+.cell.type-start .cell-name{color:#22c55e}
+.cell.type-utility .cell-name{color:#86efac}
+
+/* PAWNS */
+.pawn-area{
+  display:flex;flex-wrap:wrap;gap:2px;padding:2px 3px;
+  min-height:14px;align-items:center;justify-content:center;
+  position:relative;z-index:3}
+.pawn{
+  width:min(16px,2vw);height:min(16px,2vw);border-radius:999px;
+  border:2px solid rgba(0,0,0,.9);
+  display:flex;align-items:center;justify-content:center;
+  font-size:min(.65rem,1vw);
+  box-shadow:0 2px 6px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.15);
+  transition:transform .2s,box-shadow .2s;
+  position:relative;cursor:default;flex-shrink:0;
+  z-index:3}
+.pawn.active-pawn{
+  box-shadow:0 0 0 2.5px white,0 0 12px 4px rgba(255,255,255,.7),0 2px 8px rgba(0,0,0,.9);
+  transform:scale(1.45);z-index:5}
+.pawn:hover::after{
+  content:attr(data-name);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);
+  background:#0d1525;border:1px solid var(--border);border-radius:6px;
+  padding:3px 8px;font-size:.65rem;white-space:nowrap;color:var(--text);z-index:99;pointer-events:none}
+/* owner dot */
+.cell-owner{position:absolute;bottom:2px;right:2px;
+  width:min(5px,.8vw);height:min(5px,.8vw);border-radius:999px;border:1px solid rgba(0,0,0,.5)}
+
+/* corner positions */
+.pos-br{grid-row:11;grid-column:11}
+.pos-bl{grid-row:11;grid-column:1}
+.pos-tl{grid-row:1;grid-column:1}
+.pos-tr{grid-row:1;grid-column:11}
+.edge-b{grid-row:11}
+.edge-t{grid-row:1}
+.edge-l{grid-column:1}
+.edge-r{grid-column:11}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:340px;min-width:300px;display:flex;flex-direction:column;
+  background:rgba(8,12,24,.98);border-left:1px solid var(--border);
+  overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{
+  flex:1;padding:11px 4px;font-size:.62rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;cursor:pointer;color:var(--muted);text-align:center;
+  border:none;border-bottom:2px solid transparent;background:none;
+  transition:all .15s}
+.tab:hover{color:var(--text);background:rgba(30,41,59,.3)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(34,197,94,.04)}
+.tab-pane{display:none;flex-direction:column;gap:10px;padding:12px;overflow-y:auto;flex:1}
+.tab-pane.active{display:flex}
+.tab-pane::-webkit-scrollbar{width:4px}
+.tab-pane::-webkit-scrollbar-thumb{background:rgba(148,163,184,.2);border-radius:999px}
+
+.card{background:rgba(13,21,37,.85);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.card-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+
+/* DICE */
+.dice-wrap{display:flex;gap:10px;justify-content:center;align-items:center;margin:6px 0}
+.die{width:46px;height:46px;border-radius:10px;
+  background:rgba(13,21,37,.95);border:2px solid rgba(148,163,184,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;box-shadow:0 4px 16px rgba(0,0,0,.6)}
+.die.rolling{animation:shake .35s ease}
+@keyframes shake{
+  0%,100%{transform:rotate(0) scale(1)}
+  20%{transform:rotate(-18deg) scale(1.12)}
+  40%{transform:rotate(18deg) scale(1.15)}
+  60%{transform:rotate(-12deg) scale(1.1)}
+  80%{transform:rotate(10deg) scale(1.05)}
+}
+.dice-sum{font-size:1.4rem;font-weight:900;color:var(--yellow);min-width:32px;text-align:center}
+
+/* BUY BAR */
+.buy-bar{
+  display:none;padding:10px;border-radius:10px;margin-top:8px;
+  background:rgba(250,204,21,.07);border:1px solid rgba(250,204,21,.3)}
+.buy-bar-info{font-size:.76rem;color:#fde68a;margin-bottom:7px;line-height:1.4}
+
+/* PLAYERS LIST */
+.player-entry{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:var(--r2);border:1px solid transparent;
+  background:rgba(4,7,14,.6);transition:all .15s}
+.player-entry.cur{border-color:var(--accent);background:rgba(34,197,94,.06);
+  box-shadow:0 0 0 1px rgba(34,197,94,.2)}
+.player-entry.bust{opacity:.35}
+.pe-dot{width:14px;height:14px;border-radius:999px;flex-shrink:0;border:2px solid rgba(0,0,0,.5)}
+.pe-name{font-size:.78rem;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-money{font-size:.78rem;font-weight:700;color:var(--accent);white-space:nowrap}
+.pe-pos{font-size:.62rem;color:var(--muted)}
+.pe-tag{font-size:.58rem;padding:1px 5px;border-radius:999px;background:rgba(239,68,68,.15);color:#fca5a5}
+
+/* LOG */
+.log{max-height:110px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.log::-webkit-scrollbar{width:3px}
+.log::-webkit-scrollbar-thumb{background:rgba(148,163,184,.2);border-radius:999px}
+.le{font-size:.68rem;color:var(--muted);padding:1px 0;line-height:1.4}
+.le.a{color:#bbf7d0}.le.w{color:#fde68a}.le.d{color:#fca5a5}.le.i{color:#93c5fd}
+
+/* SWATCHES */
+.swatches{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.swatch{width:18px;height:18px;border-radius:4px;cursor:pointer;
+  border:2px solid transparent;transition:transform .1s}
+.swatch:hover{transform:scale(1.2)}
+.swatch.on{border-color:white}
+.color-row{display:flex;align-items:center;gap:8px}
+.color-prev{width:26px;height:26px;border-radius:6px;border:2px solid rgba(148,163,184,.3);flex-shrink:0}
+
+/* TOASTS */
+#toasts{position:fixed;bottom:20px;right:20px;
+  display:flex;flex-direction:column;gap:7px;z-index:999;pointer-events:none}
+.toast{padding:10px 16px;border-radius:12px;font-size:.78rem;font-weight:500;
+  animation:tin .3s ease;box-shadow:0 8px 28px rgba(0,0,0,.6);pointer-events:auto}
+@keyframes tin{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}
+.t-ok{background:rgba(22,163,74,.92);color:#dcfce7}
+.t-w{background:rgba(161,98,7,.92);color:#fef9c3}
+.t-i{background:rgba(37,99,235,.92);color:#dbeafe}
+.t-d{background:rgba(185,28,28,.92);color:#fee2e2}
+
+/* ONLINE ROOM LIST */
+.room-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.room-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 12px;border-radius:var(--r2);border:1px solid var(--border);
+  background:rgba(4,7,14,.7);cursor:pointer;transition:all .15s}
+.room-item:hover{border-color:var(--blue);background:rgba(59,130,246,.06)}
+.room-item-name{font-size:.8rem;font-weight:600}
+.room-item-meta{font-size:.65rem;color:var(--muted)}
+.room-badge{padding:2px 8px;border-radius:999px;font-size:.62rem;font-weight:600}
+.rb-open{background:rgba(34,197,94,.15);color:#86efac}
+.rb-full{background:rgba(239,68,68,.15);color:#fca5a5}
+.rb-play{background:rgba(250,204,21,.15);color:#fde68a}
+
+/* customize preview */
+.cell-preview{
+  width:80px;height:80px;border-radius:10px;border:2px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:#04070e;flex-shrink:0}
+.cp-strip{width:100%;height:10px;border-radius:4px 4px 0 0}
+.cp-icon{font-size:1.4rem}
+.cp-name{font-size:.5rem;font-weight:700;text-transform:uppercase;text-align:center;color:var(--muted);padding:2px}
+.cp-price{font-size:.52rem;color:#6b7280}
+
+/* header bar */
+.game-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;background:rgba(8,12,24,.97);border-bottom:1px solid var(--border);
+  flex-shrink:0}
+.gh-left{display:flex;align-items:center;gap:10px}
+.gh-logo{font-size:.95rem;font-weight:900;
+  background:linear-gradient(135deg,#22c55e,#0ea5e9);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent}
+.gh-turn{font-size:.75rem;color:var(--muted)}
+.gh-right{display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:999px;flex-shrink:0}
+
+/* game body = header + content */
+.game-body{flex:1;display:flex;overflow:hidden}
+
+/* mobile bottom bar */
+.mobile-bar{
+  display:none;padding:6px 12px;background:rgba(8,12,24,.98);
+  border-top:1px solid var(--border);flex-wrap:wrap;gap:6px;overflow-x:auto;flex-shrink:0}
+@media(max-width:1000px){
+  .sidebar{width:100%;max-height:45vh;min-width:0;border-left:none;border-top:1px solid var(--border)}
+  .board{width:min(480px,95vw)!important}
+  #game{flex-direction:column}
+  .mobile-bar{display:flex}
+}
+.mb-chip{
+  display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+  font-size:.66rem;background:rgba(13,21,37,.8);border:1px solid transparent;color:var(--muted);white-space:nowrap}
+.mb-chip.cur{border-color:var(--accent);color:#bbf7d0;background:rgba(34,197,94,.07)}
+.mb-chip.bust{opacity:.35;text-decoration:line-through}
+
+/* property card in modal */
+.prop-card{
+  background:var(--s2);border-radius:12px;overflow:hidden;width:100%;margin-bottom:12px}
+.prop-card-top{padding:14px 16px 10px;text-align:center}
+.prop-card-name{font-size:1rem;font-weight:700}
+.prop-card-rows{border-top:1px solid var(--border)}
+.prop-card-row{display:flex;justify-content:space-between;padding:6px 14px;font-size:.78rem;border-bottom:1px solid var(--border)}
+.prop-card-row:last-child{border-bottom:none}
+.prop-card-row span:last-child{font-weight:600;color:var(--yellow)}
+
+/* ── WINNER overlay ── */
+#winner-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);
+  z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;
+  text-align:center}
+#winner-overlay.open{display:flex}
+.winner-trophy{font-size:5rem;animation:bounce 1s infinite alternate}
+@keyframes bounce{from{transform:scale(1) rotate(-5deg)}to{transform:scale(1.1) rotate(5deg)}}
+.winner-name{font-size:2rem;font-weight:900;margin:12px 0;
+  background:linear-gradient(135deg,#facc15,#f97316);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent}
+.winner-sub{color:var(--muted);margin-bottom:24px}
+
+/* ── MAISONS & HOTELS ── */
+.house-row{display:flex;gap:1px;padding:1px 2px;min-height:8px}
+.house{width:5px;height:7px;background:#22c55e;border-radius:1px 1px 0 0;
+  border:1px solid rgba(0,0,0,.5);display:inline-block;flex-shrink:0}
+.hotel{width:9px;height:8px;background:#ef4444;border-radius:2px;
+  border:1px solid rgba(0,0,0,.5);display:inline-block}
+
+/* ── PION BOUNCE ── */
+@keyframes pawnBounce{
+  0%{transform:translateY(0) scale(1)}
+  30%{transform:translateY(-7px) scale(1.25)}
+  60%{transform:translateY(-2px) scale(1.05)}
+  100%{transform:translateY(0) scale(1)}
+}
+.pawn.moving{animation:pawnBounce .45s ease}
+
+/* ── DOUBLE FLASH ── */
+@keyframes doubleGlow{0%,100%{box-shadow:none}50%{box-shadow:0 0 22px 7px rgba(250,204,21,.85)}}
+.double-flash{animation:doubleGlow .5s ease 3}
+
+/* ── CHAT ── */
+.chat-msg{font-size:.68rem;padding:3px 7px;border-radius:6px;
+  background:rgba(30,41,59,.55);border:1px solid var(--border);margin-bottom:3px;line-height:1.4}
+.cm-author{font-weight:700;margin-right:4px}
+
+/* ── TIMER ── */
+.timer-ring{display:flex;align-items:center;gap:6px;margin:4px 0}
+.timer-num{font-size:1rem;font-weight:900;color:var(--yellow);min-width:28px;text-align:center}
+.timer-bar-wrap{flex:1;height:5px;background:rgba(30,41,59,.8);border-radius:999px;overflow:hidden}
+.timer-bar{height:100%;background:var(--accent);border-radius:999px;transition:width .9s linear,background .3s}
+.timer-bar.urgent{background:var(--red)}
+
+/* ── STAT TABLE ── */
+.stat-row{display:flex;justify-content:space-between;padding:5px 10px;
+  font-size:.74rem;border-bottom:1px solid var(--border)}
+.stat-row:last-child{border-bottom:none}
+.stat-row span:last-child{font-weight:700;color:var(--yellow)}
+
+/* ── THEME SWITCHER ── */
+body.theme-green{ --bg:#071a0e;--s1:#0a2010;--accent:#4ade80;--ag:rgba(74,222,128,.3) }
+body.theme-blue { --bg:#06101e;--s1:#0a1628;--accent:#60a5fa;--ag:rgba(96,165,250,.3) }
+body.theme-purple{ --bg:#0e0818;--s1:#160c28;--accent:#c084fc;--ag:rgba(192,132,252,.3) }
+body.theme-red  { --bg:#180808;--s1:#220c0c;--accent:#f87171;--ag:rgba(248,113,113,.3) }
+.theme-btn{padding:4px 8px;border-radius:6px;border:2px solid transparent;cursor:pointer;
+  font-size:.72rem;background:rgba(30,41,59,.8);color:var(--muted);transition:all .15s}
+.theme-btn:hover,.theme-btn.on{border-color:var(--accent);color:var(--text)}
+
+/* ── TRANSACTION HISTORY ── */
+.txn-entry{display:flex;justify-content:space-between;align-items:center;
+  padding:4px 8px;border-radius:6px;background:rgba(6,9,15,.5);
+  border:1px solid var(--border);margin-bottom:3px;font-size:.68rem}
+.txn-pos{font-weight:700;color:#86efac}
+.txn-neg{font-weight:700;color:#fca5a5}
+
+/* ── MORTGAGE BADGE ── */
+.mortgaged-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(239,68,68,.88);color:#fff;font-size:.38rem;font-weight:800;
+  padding:1px 3px;border-radius:3px;text-transform:uppercase;pointer-events:none;z-index:4;
+  letter-spacing:.06em;white-space:nowrap}
+
+/* ── GROUP HIGHLIGHT ── */
+.cell.grp-hi{border-color:rgba(255,255,255,.6)!important;z-index:4;
+  box-shadow:0 0 10px 3px rgba(255,255,255,.18)}
+
+/* ── KBD ── */
+.kbd{display:inline-block;padding:1px 5px;border-radius:4px;font-size:.6rem;
+  background:rgba(30,41,59,.8);border:1px solid rgba(148,163,184,.3);
+  color:var(--muted);font-family:monospace;margin-left:3px}
+
+/* ── PODIUM FINALE ── */
+.podium-wrap{display:flex;gap:8px;justify-content:center;align-items:flex-end;margin:16px 0}
+.podium-slot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.podium-block{width:70px;border-radius:8px 8px 0 0;display:flex;align-items:center;
+  justify-content:center;font-size:1.6rem}
+.podium-1{height:90px;background:linear-gradient(180deg,#facc15,#d97706)}
+.podium-2{height:65px;background:linear-gradient(180deg,#94a3b8,#64748b)}
+.podium-3{height:50px;background:linear-gradient(180deg,#a16207,#78350f)}
+.podium-name{font-size:.72rem;font-weight:700;text-align:center;max-width:70px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podium-money{font-size:.65rem;color:var(--accent);font-weight:700}
+.podium-props{font-size:.58rem;color:var(--muted)}
+
+/* ── PROPERTY DETAIL MODAL ── */
+.prop-strip-header{padding:14px;text-align:center;border-radius:8px 8px 0 0}
+.prop-sheet{background:rgba(6,9,15,.8);border-radius:0 0 8px 8px;margin-bottom:12px}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOBBY ══════════════ -->
+<div class="screen active" id="lobby">
+  <div style="text-align:center">
+    <div class="lobby-logo">🏦 NeoPoly</div>
+    <div class="lobby-sub">Monopoly personnalisable · multijoueur</div>
+    <div class="lobby-cards">
+      <div class="lobby-card" onclick="openModal('modal-create')">
+        <div class="lobby-card-icon">🆕</div>
+        <div class="lobby-card-title">Créer une partie</div>
+        <div class="lobby-card-desc">Crée un salon privé et invite tes amis avec un code unique</div>
+      </div>
+      <div class="lobby-card" onclick="openModal('modal-join')">
+        <div class="lobby-card-icon">🔑</div>
+        <div class="lobby-card-title">Rejoindre une partie</div>
+        <div class="lobby-card-desc">Entre un code de salle pour rejoindre une partie existante</div>
+      </div>
+      <div class="lobby-card" onclick="startLocal()">
+        <div class="lobby-card-icon">🎮</div>
+        <div class="lobby-card-title">Partie locale</div>
+        <div class="lobby-card-desc">Jusqu'à 6 joueurs en local sur le même écran, sans serveur</div>
+      </div>
+    </div>
+  </div>
+  <div class="lobby-version">NeoPoly v3.0 — 2026</div>
+</div>
+
+<!-- ══════════════ MODAL CRÉER ══════════════ -->
+<div class="modal-bg" id="modal-create">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-create')">✕</button>
+    <div class="modal-title">🆕 Créer une partie</div>
+    <div class="modal-sub">Configure ta salle privée et partage le code</div>
+    <div class="fgroup">
+      <div><label>Ton pseudo</label><input id="cr-name" type="text" placeholder="ex: Mataiasu" maxlength="16"/></div>
+      <div><label>Nom de la salle</label><input id="cr-room" type="text" placeholder="ex: salon-de-mat" maxlength="20"/></div>
+      <div><label>Mot de passe (optionnel)</label><input id="cr-pass" type="text" placeholder="Laisse vide = public" maxlength="16"/></div>
+      <div>
+        <label>Emoji pion</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="cr-emojis"></div>
+        <input id="cr-emoji" type="hidden" value="🚗"/>
+      </div>
+      <div>
+        <label>Couleur pion</label>
+        <div class="color-row">
+          <div class="color-prev" id="cr-cpreview" style="background:#22c55e"></div>
+          <input id="cr-color" type="text" value="#22c55e" placeholder="#22c55e"/>
+        </div>
+        <div class="swatches" id="cr-swatches"></div>
+      </div>
+      <div><label>Serveur WebSocket</label><input id="cr-ws" type="text" value="ws://localhost:3000" placeholder="ws://localhost:3000"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" style="flex:1" onclick="createOnlineRoom()">🚀 Créer la salle</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-create')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL REJOINDRE ══════════════ -->
+<div class="modal-bg" id="modal-join">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-join')">✕</button>
+    <div class="modal-title">🔑 Rejoindre une partie</div>
+    <div class="modal-sub">Entre le code de salle ou choisis dans la liste</div>
+    <div class="fgroup">
+      <div><label>Ton pseudo</label><input id="jn-name" type="text" placeholder="ex: Mataiasu" maxlength="16"/></div>
+      <div><label>Code de salle</label><input id="jn-room" type="text" placeholder="ex: salon-de-mat" maxlength="20"/></div>
+      <div><label>Mot de passe (si requis)</label><input id="jn-pass" type="text" placeholder="Laisse vide si aucun" maxlength="16"/></div>
+      <div>
+        <label>Emoji pion</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="jn-emojis"></div>
+        <input id="jn-emoji" type="hidden" value="🚢"/>
+      </div>
+      <div>
+        <label>Couleur pion</label>
+        <div class="color-row">
+          <div class="color-prev" id="jn-cpreview" style="background:#ef4444"></div>
+          <input id="jn-color" type="text" value="#ef4444" placeholder="#ef4444"/>
+        </div>
+        <div class="swatches" id="jn-swatches"></div>
+      </div>
+      <div><label>Serveur WebSocket</label><input id="jn-ws" type="text" value="ws://localhost:3000" placeholder="ws://localhost:3000"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-blue" style="flex:1" onclick="joinOnlineRoom()">🔌 Rejoindre</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-join')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL LOCAL ══════════════ -->
+<div class="modal-bg" id="modal-local">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-local')">✕</button>
+    <div class="modal-title">🎮 Ajouter un joueur local</div>
+    <div class="modal-sub">Configure ce joueur</div>
+    <div class="fgroup">
+      <div><label>Pseudo</label><input id="lc-name" type="text" placeholder="ex: Mataiasu" maxlength="16"/></div>
+      <div>
+        <label>Emoji pion</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="lc-emojis"></div>
+        <input id="lc-emoji" type="hidden" value="🚗"/>
+      </div>
+      <div>
+        <label>Couleur pion</label>
+        <div class="color-row">
+          <div class="color-prev" id="lc-cpreview" style="background:#22c55e"></div>
+          <input id="lc-color" type="text" value="#22c55e"/>
+        </div>
+        <div class="swatches" id="lc-swatches"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" style="flex:1" onclick="confirmAddLocal()">+ Ajouter</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-local')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL CELL INFO ══════════════ -->
+<div class="modal-bg" id="modal-cellinfo">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-cellinfo')">✕</button>
+    <div class="modal-title" id="ci-title">Propriété</div>
+    <div class="modal-sub" id="ci-sub"></div>
+    <div id="ci-body"></div>
+    <div class="btn-row" id="ci-actions"></div>
+  </div>
+</div>
+
+<!-- ══════════════ GAME ══════════════ -->
+<div class="screen" id="game">
+  <!-- Header -->
+  <div style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="game-header">
+      <div class="gh-left">
+        <span class="gh-logo">🏦 NeoPoly</span>
+        <span class="gh-turn" id="gh-turn">En attente…</span>
+      </div>
+      <div class="gh-right" style="gap:6px">
+        <div style="display:flex;gap:3px">
+          <button class="theme-btn on"  onclick="setTheme('dark')"   title="Sombre">🌑</button>
+          <button class="theme-btn"     onclick="setTheme('green')"  title="Vert">🟢</button>
+          <button class="theme-btn"     onclick="setTheme('blue')"   title="Bleu">🔵</button>
+          <button class="theme-btn"     onclick="setTheme('purple')" title="Violet">🟣</button>
+          <button class="theme-btn"     onclick="setTheme('red')"    title="Rouge">🔴</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="showStats()">📊</button>
+        <button class="btn btn-secondary btn-sm" onclick="undoLastAction()" title="Undo (U)">↩</button>
+        <span class="status-dot" id="ws-dot" style="background:#6b7280"></span>
+        <span style="font-size:.7rem;color:var(--muted)" id="ws-label">Local</span>
+        <button class="btn btn-secondary btn-sm" onclick="confirmLeave()">⬅ Quitter</button>
+      </div>
+    </div>
+    <div class="game-body">
+      <!-- Board -->
+      <div class="board-area">
+        <div class="board" id="board">
+          <div class="board-center">
+            <div class="board-center-logo">🏦 NeoPoly</div>
+            <div class="board-center-sub">Monopoly Personnalisable</div>
+            <div class="board-center-info" id="center-info">Prêt à jouer</div>
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="tabs">
+          <button class="tab active" data-tab="game-tab">🎮</button>
+          <button class="tab" data-tab="players-tab">👥</button>
+          <button class="tab" data-tab="custom-tab">🎨</button>
+          <button class="tab" data-tab="online-tab">🌐</button>
+        </div>
+        <!-- GAME TAB -->
+        <div class="tab-pane active" id="game-tab">
+          <div class="card">
+            <div class="card-title">🎯 Tour</div>
+            <div id="cur-info" style="font-size:.78rem;color:var(--muted);margin-bottom:8px">Démarre la partie.</div>
+            <div class="timer-ring">
+              <span style="font-size:.65rem;color:var(--muted)">⏱</span>
+              <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+              <span class="timer-num" id="timer-num">—</span>
+            </div>
+            <div class="dice-wrap">
+              <div class="die" id="die1">🎲</div>
+              <div class="die" id="die2">🎲</div>
+              <div class="dice-sum" id="dsum">—</div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="roll-btn" style="flex:1" disabled>🎲 Lancer</button>
+              <button class="btn btn-secondary btn-sm" id="end-btn" disabled>Fin ▶</button>
+            </div>
+            <div class="buy-bar" id="buy-bar">
+              <div class="buy-bar-info" id="buy-info"></div>
+              <div class="btn-row" style="margin-top:0">
+                <button class="btn btn-primary btn-sm" id="buy-btn">✅ Acheter</button>
+                <button class="btn btn-secondary btn-sm" id="skip-btn">Passer</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">📋 Journal</div>
+            <div class="log" id="glog"></div>
+          </div>
+          <div class="card" id="start-card">
+            <div class="card-title">⚡ Démarrer</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">Au moins 1 joueur requis.</div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="start-btn" style="flex:1">🚀 Démarrer</button>
+              <button class="btn btn-danger btn-sm" id="reset-btn">↩ Reset</button>
+            </div>
+          </div>
+        </div>
+        <!-- PLAYERS TAB -->
+        <div class="tab-pane" id="players-tab">
+          <div class="card">
+            <div class="card-title">👥 Joueurs <span id="p-count" style="color:var(--muted);font-size:.65rem"></span></div>
+            <div id="players-list" style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:.72rem;color:var(--muted);text-align:center;padding:10px">Aucun joueur.</div>
+            </div>
+          </div>
+          <div class="card" id="add-player-card">
+            <div class="card-title">➕ Ajouter joueur local</div>
+            <button class="btn btn-primary" style="width:100%" onclick="openModal('modal-local')">+ Nouveau joueur</button>
+          </div>
+        </div>
+        <!-- CUSTOMIZE TAB -->
+        <div class="tab-pane" id="custom-tab">
+          <div class="card">
+            <div class="card-title">🗂️ Case à modifier</div>
+            <select id="cell-sel" style="margin-bottom:8px"></select>
+          </div>
+          <div class="card">
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+              <div class="cell-preview" id="cell-prev">
+                <div class="cp-strip" id="cp-strip" style="background:#22c55e"></div>
+                <div class="cp-icon" id="cp-icon">🏠</div>
+                <div class="cp-name" id="cp-name">NOM</div>
+                <div class="cp-price" id="cp-price">100 $</div>
+              </div>
+              <div style="flex:1">
+                <div class="card-title">✏️ Éditer</div>
+                <div class="fgroup">
+                  <div><label>Nom</label><input id="c-name" type="text" maxlength="22"/></div>
+                  <div class="frow">
+                    <div><label>Type</label>
+                      <select id="c-type">
+                        <option value="property">Propriété</option>
+                        <option value="start">Départ</option>
+                        <option value="jail">Prison</option>
+                        <option value="gotojail">Va prison</option>
+                        <option value="tax">Taxe</option>
+                        <option value="chance">Chance</option>
+                        <option value="community">Caisse Comm.</option>
+                        <option value="railroad">Gare</option>
+                        <option value="utility">Compagnie</option>
+                        <option value="parking">Parking</option>
+                      </select>
+                    </div>
+                    <div><label>Icône</label><input id="c-icon" type="text" maxlength="2" style="font-size:1rem"/></div>
+                  </div>
+                  <div class="frow">
+                    <div><label>Prix $</label><input id="c-price" type="number" min="0"/></div>
+                    <div><label>Loyer $</label><input id="c-rent" type="number" min="0"/></div>
+                  </div>
+                  <div>
+                    <label>Couleur</label>
+                    <div class="color-row">
+                      <div class="color-prev" id="c-cpreview"></div>
+                      <input id="c-color" type="text"/>
+                    </div>
+                    <div class="swatches" id="c-swatches"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary btn-sm" id="apply-cell" style="flex:1">💾 Appliquer</button>
+              <button class="btn btn-danger btn-sm" id="reset-cell">Reset</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">📦 Import / Export JSON</div>
+            <textarea id="board-json" style="min-height:60px" placeholder="JSON plateau…"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-secondary btn-sm" onclick="exportJson()">📤 Export</button>
+              <button class="btn btn-danger btn-sm" onclick="importJson()">📥 Import</button>
+              <button class="btn btn-blue btn-sm" onclick="resetBoard()">🔄 Défaut</button>
+            </div>
+          </div>
+        </div>
+        <!-- ONLINE TAB -->
+        <div class="tab-pane" id="online-tab">
+          <div class="card">
+            <div class="card-title">🌐 Statut réseau</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div class="status-dot" id="ws-dot2" style="background:#6b7280"></div>
+              <span id="ws-label2" style="font-size:.75rem;color:var(--muted)">Non connecté</span>
+            </div>
+            <div id="room-info" style="font-size:.72rem;color:var(--muted)"></div>
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn btn-danger btn-sm" id="disc-btn" disabled onclick="disconnectWs()">Déconnecter</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">📡 Journal réseau</div>
+            <div class="log" id="ws-log"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">💬 Chat <span class="kbd">H</span></div>
+            <div class="log" id="chat-log" style="max-height:90px;margin-bottom:8px"></div>
+            <div style="display:flex;gap:6px">
+              <input id="chat-input" type="text" placeholder="Message…" maxlength="80" style="flex:1"/>
+              <button class="btn btn-primary btn-sm" onclick="sendChat()">▶</button>
+            </div>
+          </div>
+          <div class="card" style="border-color:rgba(59,130,246,.3)">
+            <div class="card-title">💡 Serveur Node.js</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">Lance ce serveur pour jouer en ligne :</div>
+            <textarea readonly style="min-height:130px;font-size:.6rem;color:#a5f3fc">// server.js
+// npm install ws && node server.js
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 3000 });
+const rooms = {};
+
+wss.on('connection', ws => {
+  let myRoom = null;
+  ws.on('message', raw => {
+    const msg = JSON.parse(raw);
+    const room = msg.room || 'default';
+    myRoom = room;
+    if (!rooms[room]) rooms[room] = new Set();
+    rooms[room].add(ws);
+    // broadcast to all in room
+    rooms[room].forEach(c => {
+      if (c.readyState === WebSocket.OPEN)
+        c.send(JSON.stringify(msg));
+    });
+  });
+  ws.on('close', () => {
+    if (myRoom && rooms[myRoom]) rooms[myRoom].delete(ws);
+  });
+});
+console.log('✅ WS Server on :3000');</textarea>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div class="mobile-bar" id="mobile-bar"></div>
+  </div>
+</div>
+
+<!-- Winner overlay -->
+<div id="winner-overlay">
+  <div class="winner-trophy">🏆</div>
+  <div class="winner-name" id="winner-name">Joueur</div>
+  <div class="winner-sub" id="winner-sub">a remporté la partie !</div>
+  <button class="btn btn-primary" onclick="backToLobby()">🏠 Retour au lobby</button>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DEFAULT BOARD DATA
+// ═══════════════════════════════════════════════════
+const DEF = [
+  {i:0,  n:'Départ',            t:'start',    p:0,   r:0,   c:'#22c55e',ico:'🚦'},
+  {i:1,  n:'Belleville',        t:'property', p:60,  r:10,  c:'#8b5cf6',ico:'🏠'},
+  {i:2,  n:'Caisse Commune',    t:'community',p:0,   r:0,   c:'#38bdf8',ico:'💳'},
+  {i:3,  n:'Vieille Rue',       t:'property', p:60,  r:10,  c:'#8b5cf6',ico:'🏠'},
+  {i:4,  n:'Impôts',            t:'tax',      p:0,   r:200, c:'#f97316',ico:'💸'},
+  {i:5,  n:'Gare Nord',         t:'railroad', p:200, r:50,  c:'#d4d4d4',ico:'🚂'},
+  {i:6,  n:'Rue Lecourbe',      t:'property', p:100, r:20,  c:'#22c55e',ico:'🏠'},
+  {i:7,  n:'Chance',            t:'chance',   p:0,   r:0,   c:'#fbbf24',ico:'❓'},
+  {i:8,  n:'Rue de Vaugirard',  t:'property', p:100, r:20,  c:'#22c55e',ico:'🏠'},
+  {i:9,  n:'Rue Courcelles',    t:'property', p:120, r:24,  c:'#22c55e',ico:'🏠'},
+  {i:10, n:'Prison / Visite',   t:'jail',     p:0,   r:0,   c:'#ef4444',ico:'⛓️'},
+  {i:11, n:'Av. de la Rép.',    t:'property', p:140, r:28,  c:'#f97316',ico:'🏠'},
+  {i:12, n:'Cie Électrique',    t:'utility',  p:150, r:30,  c:'#facc15',ico:'⚡'},
+  {i:13, n:'Av. de Verdun',     t:'property', p:140, r:28,  c:'#f97316',ico:'🏠'},
+  {i:14, n:'Av. Champagne',     t:'property', p:160, r:32,  c:'#f97316',ico:'🏠'},
+  {i:15, n:'Gare Est',          t:'railroad', p:200, r:50,  c:'#d4d4d4',ico:'🚂'},
+  {i:16, n:'Av. Mathurin',      t:'property', p:180, r:36,  c:'#ef4444',ico:'🏠'},
+  {i:17, n:'Caisse Commune',    t:'community',p:0,   r:0,   c:'#38bdf8',ico:'💳'},
+  {i:18, n:'Av. de l\'Opéra',   t:'property', p:180, r:36,  c:'#ef4444',ico:'🏠'},
+  {i:19, n:'Av. Foch',          t:'property', p:200, r:40,  c:'#ef4444',ico:'🏠'},
+  {i:20, n:'Parking Gratuit',   t:'parking',  p:0,   r:0,   c:'#facc15',ico:'🅿️'},
+  {i:21, n:'Bd des Capucines',  t:'property', p:220, r:44,  c:'#f43f5e',ico:'🏠'},
+  {i:22, n:'Chance',            t:'chance',   p:0,   r:0,   c:'#fbbf24',ico:'❓'},
+  {i:23, n:'Av. Mozart',        t:'property', p:220, r:44,  c:'#f43f5e',ico:'🏠'},
+  {i:24, n:'Bd Saint-Michel',   t:'property', p:240, r:48,  c:'#f43f5e',ico:'🏠'},
+  {i:25, n:'Gare Lyon',         t:'railroad', p:200, r:50,  c:'#d4d4d4',ico:'🚂'},
+  {i:26, n:'Av. de Wagram',     t:'property', p:260, r:52,  c:'#84cc16',ico:'🏠'},
+  {i:27, n:'Cie des Eaux',      t:'utility',  p:150, r:30,  c:'#facc15',ico:'💧'},
+  {i:28, n:'Bd Haussmann',      t:'property', p:260, r:52,  c:'#84cc16',ico:'🏠'},
+  {i:29, n:'Rue de la Paix',    t:'property', p:280, r:56,  c:'#84cc16',ico:'🏠'},
+  {i:30, n:'Allez en Prison',   t:'gotojail', p:0,   r:0,   c:'#ef4444',ico:'👮'},
+  {i:31, n:'Av. Montaigne',     t:'property', p:300, r:60,  c:'#3b82f6',ico:'🏠'},
+  {i:32, n:'Av. Kléber',        t:'property', p:300, r:60,  c:'#3b82f6',ico:'🏠'},
+  {i:33, n:'Caisse Commune',    t:'community',p:0,   r:0,   c:'#38bdf8',ico:'💳'},
+  {i:34, n:'Av. de Breteuil',   t:'property', p:320, r:64,  c:'#3b82f6',ico:'🏠'},
+  {i:35, n:'Gare Montparnasse', t:'railroad', p:200, r:50,  c:'#d4d4d4',ico:'🚂'},
+  {i:36, n:'Chance',            t:'chance',   p:0,   r:0,   c:'#fbbf24',ico:'❓'},
+  {i:37, n:'Av. Matignon',      t:'property', p:350, r:70,  c:'#a855f7',ico:'🏠'},
+  {i:38, n:'Taxe de Luxe',      t:'tax',      p:0,   r:100, c:'#f97316',ico:'💎'},
+  {i:39, n:'Bd du Temple',      t:'property', p:400, r:80,  c:'#a855f7',ico:'🏠'},
+];
+
+const CHANCE_CARDS = [
+  {txt:'Avancez au Départ, recevez 200 $.', fn:(p)=>{ p.pos=0; p.money+=200; }},
+  {txt:'Dividendes bancaires : +150 $.',    fn:(p)=>{ p.money+=150; }},
+  {txt:'Amende pour infraction : -50 $.',  fn:(p)=>{ p.money-=50; }},
+  {txt:'Concours de beauté : +20 $.',      fn:(p)=>{ p.money+=20; }},
+  {txt:'Reculez de 3 cases.',              fn:(p)=>{ p.pos=(p.pos-3+40)%40; }},
+  {txt:'Frais de scolarité : -100 $.',     fn:(p)=>{ p.money-=100; }},
+  {txt:'Intérêts bancaires : +50 $.',      fn:(p)=>{ p.money+=50; }},
+  {txt:'Allez directement en prison !',    fn:(p)=>{ p.pos=10; p.jailed=true; }},
+];
+const COMMUNITY_CARDS = [
+  {txt:'Collecte bancaire : recevez 200 $.', fn:(p)=>{ p.money+=200; }},
+  {txt:'Erreur bancaire en votre faveur : +100 $.', fn:(p)=>{ p.money+=100; }},
+  {txt:'Frais médicaux : -50 $.',           fn:(p)=>{ p.money-=50; }},
+  {txt:'Remboursement d\'impôts : +80 $.',   fn:(p)=>{ p.money+=80; }},
+  {txt:'Fête de quartier : +10 $ de chaque joueur.', fn:(p,all)=>{ all.forEach(o=>{ if(o.id!==p.id){o.money-=10;p.money+=10;} }); }},
+];
+const PAWN_COLORS = ['#22c55e','#ef4444','#3b82f6','#f59e0b','#a855f7','#ec4899'];
+const PAWN_EMOJIS = ['🚗','🚢','🎩','👠','🐶','🚂','✈️','🌟','🎸','🏆'];
+const SW_COLORS   = ['#22c55e','#ef4444','#3b82f6','#f59e0b','#a855f7','#ec4899','#14b8a6','#f97316','#8b5cf6','#f43f5e','#38bdf8','#fbbf24','#d4d4d4','#84cc16','#a855f7','#06b6d4'];
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let G = {
+  board: clone(DEF),
+  players: [],
+  cur: 0,
+  started: false,
+  rolled: false,
+  pendingBuy: null,
+  jailTurns: {},
+  ws: null,
+  wsOk: false,
+  room: null,
+  myId: null,
+  mode: 'local',
+};
+
+function clone(x){ return JSON.parse(JSON.stringify(x)); }
+
+// ═══════════════════════════════════════════════════
+//  SCREEN / MODAL
+// ═══════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(mb=>{
+  mb.addEventListener('click', e=>{ if(e.target===mb) mb.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════════
+//  GRID MAPPING
+// ═══════════════════════════════════════════════════
+function gridPos(i){
+  if(i<=10){ const col=11-i; return {row:11,col,corner:i===0?'pos-br':i===10?'pos-bl':null,edge:'edge-b'}; }
+  if(i<=20){ const row=11-(i-10); return {row,col:1,corner:i===20?'pos-tl':null,edge:'edge-l'}; }
+  if(i<=30){ const col=1+(i-20); return {row:1,col,corner:i===30?'pos-tr':null,edge:'edge-t'}; }
+  return {row:1+(i-30),col:11,corner:null,edge:'edge-r'};
+}
+
+// ═══════════════════════════════════════════════════
+//  BUILD BOARD
+// ═══════════════════════════════════════════════════
+function buildBoard(){
+  const b=document.getElementById('board');
+  b.querySelectorAll('.cell').forEach(c=>c.remove());
+  G.board.forEach(cell=>{
+    const gp=gridPos(cell.i);
+    const el=document.createElement('div');
+    el.className='cell type-'+cell.t;
+    if(gp.corner) el.classList.add('corner',gp.corner);
+    else el.classList.add(gp.edge);
+    el.dataset.idx=cell.i;
+    el.style.gridRow=gp.row;
+    el.style.gridColumn=gp.col;
+
+    // Strip
+    const strip=document.createElement('div');
+    strip.className='cell-strip';
+    strip.style.background=cell.c||'transparent';
+    el.appendChild(strip);
+
+    // Pawn area — TOP of cell for visibility
+    const pa=document.createElement('div');
+    pa.className='pawn-area'; pa.id='pa-'+cell.i;
+    el.appendChild(pa);
+
+    // Icon
+    const ico=document.createElement('div');
+    ico.className='cell-icon'; ico.textContent=cell.ico||'';
+    el.appendChild(ico);
+
+    // Name
+    const nm=document.createElement('div');
+    nm.className='cell-name'; nm.textContent=cell.n;
+    el.appendChild(nm);
+
+    // Price (property only)
+    if(cell.p>0 && cell.t==='property'){
+      const pr=document.createElement('div');
+      pr.className='cell-price'; pr.textContent=cell.p+'$';
+      el.appendChild(pr);
+    }
+
+    // House row
+    const hr=document.createElement('div');
+    hr.className='house-row'; hr.id='hr-'+cell.i;
+    el.appendChild(hr);
+    // Owner dot
+    const od=document.createElement('div');
+    od.className='cell-owner'; od.id='od-'+cell.i;
+    el.appendChild(od);
+
+    el.title=cell.n+(cell.p>0?' — '+cell.p+'$ / loyer '+cell.r+'$':'')+(cell.mortgaged?' [HYPOTHÉQUÉE]':'');
+    if(cell.mortgaged){
+      const mb=document.createElement('div');
+      mb.className='mortgaged-badge'; mb.textContent='HYPOTHÈQUE';
+      el.appendChild(mb);
+      el.style.opacity='0.5';
+    }
+    el.addEventListener('click',()=>onCellClick(cell.i));
+    el.addEventListener('mouseenter',()=>{ if(cell.t==='property'&&cell.c) highlightGroup(cell.c,cell.t); });
+    el.addEventListener('mouseleave',()=>clearHighlight());
+    b.appendChild(el);
+  });
+  refreshOwners();
+  refreshPawns();
+  refreshHouses();
+  populateCellSel();
+}
+
+function refreshHouses(){
+  G.board.forEach(cell=>{
+    const hr=document.getElementById('hr-'+cell.i); if(!hr) return;
+    hr.innerHTML='';
+    const n=cell.houses||0;
+    if(n>=5){
+      const h=document.createElement('div'); h.className='hotel'; hr.appendChild(h);
+    } else {
+      for(let i=0;i<n;i++){
+        const h=document.createElement('div'); h.className='house'; hr.appendChild(h);
+      }
+    }
+  });
+}
+
+function highlightGroup(color, type){
+  document.querySelectorAll('.cell').forEach(c=>{
+    const idx=parseInt(c.dataset.idx);
+    const cell=G.board[idx];
+    c.classList.toggle('grp-hi', !!(cell && cell.c===color && cell.t===type));
+  });
+}
+function clearHighlight(){
+  document.querySelectorAll('.cell').forEach(c=>c.classList.remove('grp-hi'));
+}
+
+function refreshOwners(){
+  G.board.forEach(cell=>{
+    const od=document.getElementById('od-'+cell.i);
+    if(!od) return;
+    if(cell.owner){
+      const p=G.players.find(x=>x.id===cell.owner);
+      od.style.background=p?p.color:'transparent';
+    } else { od.style.background='transparent'; }
+  });
+}
+
+function refreshPawns(){
+  G.board.forEach(cell=>{
+    const pa=document.getElementById('pa-'+cell.i);
+    if(pa) pa.innerHTML='';
+  });
+  G.players.forEach((p,idx)=>{
+    if(p.bust) return;
+    const pa=document.getElementById('pa-'+p.pos);
+    if(!pa) return;
+    const pawn=document.createElement('div');
+    pawn.className='pawn'+(idx===G.cur?' active-pawn':'');
+    pawn.style.background=p.color;
+    pawn.dataset.name=p.emoji+' '+p.name;
+    pawn.textContent=p.emoji;
+    pa.appendChild(pawn);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  PLAYERS RENDER
+// ═══════════════════════════════════════════════════
+function renderPlayers(){
+  const list=document.getElementById('players-list');
+  list.innerHTML='';
+  document.getElementById('p-count').textContent='('+G.players.length+'/6)';
+  if(!G.players.length){
+    list.innerHTML='<div style="font-size:.72rem;color:var(--muted);text-align:center;padding:10px">Aucun joueur.</div>';
+  } else {
+    G.players.forEach((p,idx)=>{
+      const cell=G.board[p.pos]||{n:'?'};
+      const d=document.createElement('div');
+      d.className='player-entry'+(idx===G.cur&&G.started?' cur':'')+(p.bust?' bust':'');
+      d.style.cursor='pointer';
+      d.addEventListener('click',e=>{ if(!e.target.closest('button')) showTxnHistory(idx); });
+      d.innerHTML=`
+        <div class="pe-dot" style="background:${p.color}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="pe-name">${p.emoji} ${p.name}${p.bust?' 💀':''}</div>
+          <div class="pe-pos">Case ${p.pos} — ${cell.n}${p.jailed?' ⛓️':''}</div>
+        </div>
+        <div>
+          <div class="pe-money">${p.money}$</div>
+          ${!G.started?`<button class="btn btn-danger btn-xs" style="margin-top:3px" onclick="removePlayer(${idx})">✕</button>`:''}
+        </div>`;
+      list.appendChild(d);
+    });
+  }
+  // mobile bar
+  const mb=document.getElementById('mobile-bar');
+  mb.innerHTML='';
+  G.players.forEach((p,idx)=>{
+    const ch=document.createElement('div');
+    ch.className='mb-chip'+(idx===G.cur&&G.started?' cur':'')+(p.bust?' bust':'');
+    ch.innerHTML=`<div style="width:8px;height:8px;border-radius:999px;background:${p.color};flex-shrink:0"></div>${p.emoji} ${p.name} <b style="color:var(--accent)">${p.money}$</b>`;
+    mb.appendChild(ch);
+  });
+  refreshPawns();
+  updateCurInfo();
+}
+
+function removePlayer(idx){
+  G.players.splice(idx,1); renderPlayers();
+  toast('Joueur supprimé.','w');
+}
+
+function updateCurInfo(){
+  const el=document.getElementById('cur-info');
+  const hdr=document.getElementById('gh-turn');
+  if(!G.started||!G.players.length){
+    el.textContent='Démarre la partie via l\'onglet 🎮'; hdr.textContent='En attente…';
+    return;
+  }
+  const p=G.players[G.cur]; if(!p) return;
+  const cell=G.board[p.pos]||{n:'?'};
+  el.innerHTML=`<span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${p.color};margin-right:5px;vertical-align:middle"></span><b>${p.emoji} ${p.name}</b> — <span style="color:var(--accent)">${p.money}$</span><br><span style="font-size:.65rem;color:var(--muted)">Case ${p.pos}: ${cell.n}${p.jailed?' ⛓️ Prison':''}</span>`;
+  hdr.textContent='Tour de '+p.emoji+' '+p.name;
+  document.getElementById('center-info').textContent='Tour de '+p.name;
+}
+
+// ═══════════════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════════════
+function d6(){ return 1+Math.floor(Math.random()*6); }
+
+const DFACES=['','⚀','⚁','⚂','⚃','⚄','⚅'];
+function animDice(a,b){
+  const e1=document.getElementById('die1'),e2=document.getElementById('die2');
+  e1.classList.add('rolling'); e2.classList.add('rolling');
+  setTimeout(()=>{ e1.classList.remove('rolling'); e2.classList.remove('rolling'); },350);
+  e1.textContent=DFACES[a]; e2.textContent=DFACES[b];
+  document.getElementById('dsum').textContent=a+b;
+}
+
+function doRoll(){
+  if(!G.started||G.rolled) return;
+  saveUndoSnap();
+  const p=G.players[G.cur]; if(!p||p.bust){ doNextTurn(); return; }
+  if(p.jailed){
+    if(!G.jailTurns[p.id]) G.jailTurns[p.id]=0;
+    G.jailTurns[p.id]++;
+    const a=d6(),b=d6(); animDice(a,b);
+    stopTimer();
+    if(a===b){
+      p.jailed=false; delete G.jailTurns[p.id];
+      glog('🎉 '+p.name+' fait un double, sort de prison !','a');
+      movePlayer(p,a+b);
+    } else if(G.jailTurns[p.id]>=3){
+      p.money-=50; p.jailed=false; delete G.jailTurns[p.id];
+      glog(p.name+' paie 50$ et sort de prison.','w');
+      movePlayer(p,a+b);
+    } else {
+      glog(p.name+' reste en prison ('+a+'+'+b+').','w');
+      G.rolled=true; renderPlayers(); updBtns(); return;
+    }
+  } else {
+    const a=d6(),b=d6(); animDice(a,b);
+    stopTimer();
+    movePlayer(p,a+b);
+    if(a===b){ glog(p.name+' fait un double ! Rejoue.','a'); G.rolled=false; }
+    else { G.rolled=true; }
+  }
+  renderPlayers(); updBtns(); broadcast();
+}
+
+function movePlayer(p,steps){
+  const old=p.pos;
+  const npos=(old+steps)%40;
+  if(old+steps>=40){ p.money+=200; recordTxn(p,200,'Passage Départ'); glog(p.name+' passe par Départ → +200$.','a'); }
+  p.pos=npos;
+  animPawnArrive(npos);
+  const cell=G.board[npos];
+  glog(p.name+' avance de '+steps+' → '+cell.n+'.');
+  resolveCell(p,cell);
+}
+
+function resolveCell(p,cell){
+  switch(cell.t){
+    case 'start': glog(p.name+' s\'arrête sur Départ.'); break;
+    case 'tax': { const t=cell.r||200; p.money-=t; recordTxn(p,-t,'Taxe: '+cell.n); glog(p.name+' paie '+t+'$ de taxe.','d'); checkBust(p); break; }
+    case 'chance': drawCard(p,CHANCE_CARDS,'❓ CHANCE'); break;
+    case 'community': drawCard(p,COMMUNITY_CARDS,'💳 CAISSE'); break;
+    case 'jail': glog(p.name+' est en visite (prison).'); break;
+    case 'gotojail': p.pos=10; p.jailed=true; glog(p.name+' va en prison !','d'); break;
+    case 'parking': glog(p.name+' se gare. Aucun effet.'); break;
+    case 'property': case 'railroad': case 'utility': handleProp(p,cell); break;
+    default: glog(p.name+' sur '+cell.n+'.');
+  }
+  // AUTO-END: check after every cell resolution
+  if(G.started) setTimeout(checkAutoEnd, 150);
+}
+
+function handleProp(p,cell){
+  if(!cell.owner && cell.p>0 && p.money>=cell.p){
+    G.pendingBuy={cell};
+    document.getElementById('buy-info').textContent='Acheter '+cell.ico+' '+cell.n+' pour '+cell.p+'$ ? (loyer: '+cell.r+'$)';
+    document.getElementById('buy-bar').style.display='block';
+    updBtns();
+  } else if(!cell.owner && cell.p>0 && p.money<cell.p){
+    glog(p.name+' n\'a pas assez pour '+cell.n+'.','w');
+  } else if(cell.owner && cell.owner!==p.id && !cell.mortgaged){
+    const owner=G.players.find(o=>o.id===cell.owner);
+    const rent=cell.r||20;
+    p.money-=rent; recordTxn(p,-rent,'Loyer: '+cell.n); if(owner){ owner.money+=rent; recordTxn(owner,rent,'Loyer reçu: '+cell.n); }
+    glog(p.name+' paie '+rent+'$ de loyer à '+(owner?owner.name:'?')+'.','w');
+    checkBust(p);
+  } else if(cell.owner===p.id){
+    glog(p.name+' est sur sa propriété.');
+  }
+}
+
+function drawCard(p,deck,label){
+  const c=deck[Math.floor(Math.random()*deck.length)];
+  glog(label+' — '+c.txt,'i');
+  c.fn(p,G.players);
+  // re-resolve new position if teleported
+  if(c.fn.toString().includes('p.pos')) resolveCell(p,G.board[p.pos]);
+  checkBust(p);
+}
+
+function checkBust(p){
+  if(p.money<=0 && !p.bust){
+    p.bust=true; p.money=0;
+    glog('💀 '+p.name+' est en faillite !','d');
+    toast(p.emoji+' '+p.name+' est en faillite !','d');
+    const alive=G.players.filter(x=>!x.bust);
+    if(alive.length===1) endGame(alive[0]);
+  }
+}
+
+function endGame(w){
+  G.started=false;
+  stopTimer();
+  glog('🏆 '+w.name+' remporte la partie avec '+w.money+'$ !','a');
+  toast('🏆 '+w.emoji+' '+w.name+' a gagné !','ok');
+  setTimeout(()=>showEndGameStats(w), 800);
+}
+
+function doNextTurn(){
+  if(!G.started) return;
+  hideBuyBar();
+  let n=(G.cur+1)%G.players.length, s=0;
+  while(G.players[n]&&G.players[n].bust && s++<G.players.length) n=(n+1)%G.players.length;
+  G.cur=n; G.rolled=false;
+  document.getElementById('die1').textContent='🎲';
+  document.getElementById('die2').textContent='🎲';
+  document.getElementById('dsum').textContent='—';
+  renderPlayers(); updBtns(); broadcast(); startTimer();
+}
+
+function hideBuyBar(){ document.getElementById('buy-bar').style.display='none'; G.pendingBuy=null; }
+
+function updBtns(){
+  document.getElementById('roll-btn').disabled=!G.started||G.rolled;
+  document.getElementById('end-btn').disabled=!G.started||!G.rolled||!!G.pendingBuy;
+}
+
+// ═══════════════════════════════════════════════════
+//  CELL EDITOR
+// ═══════════════════════════════════════════════════
+function populateCellSel(){
+  const sel=document.getElementById('cell-sel'); sel.innerHTML='';
+  G.board.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c.i; o.textContent=String(c.i).padStart(2,'0')+' — '+c.ico+' '+c.n;
+    sel.appendChild(o);
+  });
+  loadCellEditor();
+}
+
+function loadCellEditor(){
+  const idx=parseInt(document.getElementById('cell-sel').value,10);
+  const cell=G.board[idx]; if(!cell) return;
+  document.getElementById('c-name').value=cell.n;
+  document.getElementById('c-type').value=cell.t;
+  document.getElementById('c-icon').value=cell.ico||'';
+  document.getElementById('c-price').value=cell.p||0;
+  document.getElementById('c-rent').value=cell.r||0;
+  document.getElementById('c-color').value=cell.c||'#22c55e';
+  document.getElementById('c-cpreview').style.background=cell.c||'#22c55e';
+  updateCellPreview();
+  document.querySelectorAll('#c-swatches .swatch').forEach(s=>s.classList.toggle('on',s.dataset.c===cell.c));
+}
+
+function updateCellPreview(){
+  const n=document.getElementById('c-name').value;
+  const ico=document.getElementById('c-icon').value;
+  const p=document.getElementById('c-price').value;
+  const col=document.getElementById('c-color').value;
+  document.getElementById('cp-strip').style.background=col||'#333';
+  document.getElementById('cp-icon').textContent=ico||'🏠';
+  document.getElementById('cp-name').textContent=n||'NOM';
+  document.getElementById('cp-price').textContent=p>0?p+'$':'';
+}
+
+['c-name','c-icon','c-price','c-rent','c-color'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input',updateCellPreview);
+});
+
+function applyCell(){
+  const idx=parseInt(document.getElementById('cell-sel').value,10);
+  const cell=G.board[idx]; if(!cell) return;
+  cell.n=document.getElementById('c-name').value||cell.n;
+  cell.t=document.getElementById('c-type').value;
+  cell.ico=document.getElementById('c-icon').value;
+  cell.p=parseInt(document.getElementById('c-price').value||0);
+  cell.r=parseInt(document.getElementById('c-rent').value||0);
+  cell.c=document.getElementById('c-color').value||cell.c;
+  buildBoard(); document.getElementById('cell-sel').value=idx;
+  glog('Case '+idx+' ('+cell.n+') mise à jour.','a');
+  toast('Case "'+cell.n+'" modifiée !','ok');
+  broadcast();
+}
+
+function resetCell(){
+  const idx=parseInt(document.getElementById('cell-sel').value,10);
+  G.board[idx]=clone(DEF[idx]);
+  buildBoard(); document.getElementById('cell-sel').value=idx; loadCellEditor();
+  toast('Case '+idx+' réinitialisée.','i');
+}
+
+function onCellClick(idx){
+  document.querySelectorAll('.cell').forEach(c=>c.classList.remove('selected'));
+  const el=document.querySelector('.cell[data-idx="'+idx+'"]');
+  if(el) el.classList.add('selected');
+  const cell=G.board[idx];
+  if(G.started && cell && ['property','railroad','utility'].includes(cell.t)){
+    showPropModal(idx); return;
+  }
+  document.getElementById('cell-sel').value=idx;
+  loadCellEditor(); switchTab('custom-tab');
+}
+
+// ═══════════════════════════════════════════════════
+//  ADD PLAYER
+// ═══════════════════════════════════════════════════
+function confirmAddLocal(){
+  const name=document.getElementById('lc-name').value.trim();
+  const color=document.getElementById('lc-color').value||PAWN_COLORS[G.players.length%PAWN_COLORS.length];
+  const emoji=document.getElementById('lc-emoji').value||PAWN_EMOJIS[G.players.length%PAWN_EMOJIS.length];
+  if(!name){ toast('Entre un pseudo !','w'); return; }
+  if(G.players.length>=6){ toast('Max 6 joueurs.','w'); return; }
+  if(G.started){ toast('Partie déjà démarrée.','w'); return; }
+  G.players.push({id:'P'+Date.now(),name,color,emoji,money:1500,pos:0,bust:false,jailed:false});
+  document.getElementById('lc-name').value='';
+  closeModal('modal-local'); renderPlayers();
+  toast(emoji+' '+name+' a rejoint !','ok');
+}
+
+// ═══════════════════════════════════════════════════
+//  START / RESET
+// ═══════════════════════════════════════════════════
+function doStart(){
+  if(!G.players.length){ toast('Ajoute au moins 1 joueur !','w'); return; }
+  G.players.forEach(p=>{ p.pos=0; p.money=1500; p.bust=false; p.jailed=false; });
+  G.board.forEach(c=>{ delete c.owner; c.houses=0; c.mortgaged=false; });
+  G.cur=0; G.started=true; G.rolled=false;
+  glog('🎉 Partie démarrée !','a'); toast('La partie commence !','ok');
+  renderPlayers(); buildBoard(); updBtns(); switchTab('game-tab'); broadcast(); startTimer();
+}
+
+function doReset(){
+  if(!confirm('Réinitialiser la partie ?')) return;
+  G.players.forEach(p=>{ p.pos=0; p.money=1500; p.bust=false; p.jailed=false; });
+  G.board.forEach(c=>{ delete c.owner; c.houses=0; c.mortgaged=false; });
+  G.started=false; G.cur=0; G.rolled=false; G.pendingBuy=null;
+  hideBuyBar();
+  document.getElementById('die1').textContent='🎲';
+  document.getElementById('die2').textContent='🎲';
+  document.getElementById('dsum').textContent='—';
+  document.getElementById('glog').innerHTML='';
+  glog('Partie réinitialisée.','i');
+  renderPlayers(); buildBoard(); updBtns(); toast('Reset effectué.','i');
+}
+
+function startLocal(){
+  G.mode='local'; showScreen('game'); renderPlayers(); buildBoard(); updBtns();
+}
+
+function backToLobby(){
+  document.getElementById('winner-overlay').classList.remove('open');
+  G.started=false; G.players=[]; G.board=clone(DEF);
+  showScreen('lobby');
+}
+
+function confirmLeave(){
+  if(!G.started||confirm('Quitter la partie ?')){ backToLobby(); }
+}
+
+// ═══════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id===name));
+}
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>switchTab(btn.dataset.tab));
+});
+
+// ═══════════════════════════════════════════════════
+//  LOG & TOAST
+// ═══════════════════════════════════════════════════
+function glog(msg,cls=''){
+  const el=document.getElementById('glog');
+  const e=document.createElement('div');
+  e.className='le'+(cls?' '+cls:''); e.textContent=msg;
+  el.appendChild(e); el.scrollTop=el.scrollHeight;
+}
+function wslog(msg){
+  const el=document.getElementById('ws-log');
+  const e=document.createElement('div'); e.className='le i'; e.textContent=msg;
+  el.appendChild(e); el.scrollTop=el.scrollHeight;
+}
+function toast(msg,cls='i'){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div'); t.className='toast t-'+cls; t.textContent=msg;
+  c.appendChild(t); setTimeout(()=>t.remove(),3500);
+}
+
+// ═══════════════════════════════════════════════════
+//  JSON
+// ═══════════════════════════════════════════════════
+function exportJson(){ document.getElementById('board-json').value=JSON.stringify(G.board,null,2); toast('Exporté !','ok'); }
+function importJson(){
+  try{
+    const d=JSON.parse(document.getElementById('board-json').value);
+    if(!Array.isArray(d)||d.length!==40){ toast('40 cases requises.','d'); return; }
+    G.board=d; buildBoard(); toast('Importé !','ok');
+  } catch(e){ toast('JSON invalide.','d'); }
+}
+function resetBoard(){
+  if(!confirm('Réinitialiser le plateau ?')) return;
+  G.board=clone(DEF); buildBoard(); toast('Plateau réinitialisé.','i');
+}
+
+// ═══════════════════════════════════════════════════
+//  WEBSOCKET
+// ═══════════════════════════════════════════════════
+function setWsDot(color,label){
+  ['ws-dot','ws-dot2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.background=color; });
+  ['ws-label','ws-label2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=label; });
+}
+
+function connectWs(url,room,name){
+  if(G.ws) G.ws.close();
+  try{ G.ws=new WebSocket(url); } catch(e){ toast('URL WebSocket invalide.','d'); return; }
+  G.room=room; setWsDot('#f59e0b','Connexion…');
+  G.ws.onopen=()=>{
+    G.wsOk=true; setWsDot('#22c55e','En ligne');
+    document.getElementById('disc-btn').disabled=false;
+    wslog('Connecté à '+url+' — salle: '+room);
+    toast('Connecté au serveur !','ok');
+    G.ws.send(JSON.stringify({type:'join',room,name}));
+    document.getElementById('room-info').textContent='Salle: '+room+' | Pseudo: '+name;
+  };
+  G.ws.onmessage=e=>{ try{ handleWsMsg(JSON.parse(e.data)); } catch{} };
+  G.ws.onerror=()=>{ setWsDot('#ef4444','Erreur'); toast('Erreur WebSocket.','d'); };
+  G.ws.onclose=()=>{ G.wsOk=false; setWsDot('#6b7280','Déconnecté'); document.getElementById('disc-btn').disabled=true; wslog('Déconnecté.'); };
+}
+
+function disconnectWs(){ if(G.ws){ G.ws.close(); G.ws=null; } }
+
+function handleWsMsg(msg){
+  wslog('['+msg.type+'] '+(msg.name||''));
+  if(msg.type==='state_sync' && msg.state){
+    G.board=msg.state.board; G.players=msg.state.players;
+    G.cur=msg.state.cur; G.started=msg.state.started; G.rolled=msg.state.rolled;
+    buildBoard(); renderPlayers(); updBtns();
+  } else if(msg.type==='chat'){ appendChat(msg); }
+  else if(msg.type==='join'){
+    wslog('👋 '+msg.name+' a rejoint la salle '+msg.room);
+    toast(msg.name+' a rejoint la partie !','i');
+  }
+}
+
+function broadcast(){
+  if(G.wsOk && G.ws){
+    G.ws.send(JSON.stringify({type:'state_sync',room:G.room,state:{
+      board:G.board,players:G.players,cur:G.cur,started:G.started,rolled:G.rolled
+    }}));
+  }
+}
+
+function createOnlineRoom(){
+  const name=document.getElementById('cr-name').value.trim();
+  const room=document.getElementById('cr-room').value.trim()||'neopoly-'+Math.random().toString(36).slice(2,6);
+  const color=document.getElementById('cr-color').value;
+  const emoji=document.getElementById('cr-emoji').value;
+  const wsUrl=document.getElementById('cr-ws').value.trim();
+  if(!name){ toast('Entre un pseudo !','w'); return; }
+  G.players=[{id:'P'+Date.now(),name,color,emoji,money:1500,pos:0,bust:false,jailed:false}];
+  G.mode='online'; G.myId=G.players[0].id;
+  closeModal('modal-create'); startLocal();
+  connectWs(wsUrl,room,name);
+  toast('Salle "'+room+'" créée !','ok');
+}
+
+function joinOnlineRoom(){
+  const name=document.getElementById('jn-name').value.trim();
+  const room=document.getElementById('jn-room').value.trim();
+  const color=document.getElementById('jn-color').value;
+  const emoji=document.getElementById('jn-emoji').value;
+  const wsUrl=document.getElementById('jn-ws').value.trim();
+  if(!name||!room){ toast('Pseudo et salle requis !','w'); return; }
+  G.players=[{id:'P'+Date.now(),name,color,emoji,money:1500,pos:0,bust:false,jailed:false}];
+  G.mode='online'; G.myId=G.players[0].id;
+  closeModal('modal-join'); startLocal();
+  connectWs(wsUrl,room,name);
+}
+
+// ═══════════════════════════════════════════════════
+//  SWATCHES BUILDER
+// ═══════════════════════════════════════════════════
+function buildSwatches(containerId,inputId,previewId,emojiContainerId,emojiInputId){
+  const sc=document.getElementById(containerId);
+  if(sc) SW_COLORS.forEach(col=>{
+    const s=document.createElement('div'); s.className='swatch'; s.style.background=col; s.dataset.c=col;
+    s.addEventListener('click',()=>{
+      document.getElementById(inputId).value=col;
+      if(previewId) document.getElementById(previewId).style.background=col;
+      sc.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('on',x.dataset.c===col));
+    });
+    sc.appendChild(s);
+  });
+  const ic=document.getElementById(emojiContainerId);
+  if(ic) PAWN_EMOJIS.forEach(em=>{
+    const b=document.createElement('button');
+    b.type='button'; b.style.cssText='background:none;border:none;font-size:1.4rem;cursor:pointer;padding:2px;border-radius:6px;border:2px solid transparent;transition:all .1s';
+    b.textContent=em;
+    b.addEventListener('click',()=>{
+      document.getElementById(emojiInputId).value=em;
+      ic.querySelectorAll('button').forEach(x=>x.style.borderColor='transparent');
+      b.style.borderColor='var(--accent)';
+    });
+    ic.appendChild(b);
+  });
+  if(inputId){
+    const inp=document.getElementById(inputId);
+    if(inp) inp.addEventListener('input',e=>{
+      if(previewId) document.getElementById(previewId).style.background=e.target.value;
+    });
+  }
+}
+
+buildSwatches('cr-swatches','cr-color','cr-cpreview','cr-emojis','cr-emoji');
+buildSwatches('jn-swatches','jn-color','jn-cpreview','jn-emojis','jn-emoji');
+buildSwatches('lc-swatches','lc-color','lc-cpreview','lc-emojis','lc-emoji');
+buildSwatches('c-swatches','c-color','c-cpreview',null,null);
+document.getElementById('c-color').addEventListener('input',e=>{ document.getElementById('c-cpreview').style.background=e.target.value; updateCellPreview(); });
+
+// ═══════════════════════════════════════════════════
+//  EVENT LISTENERS
+// ═══════════════════════════════════════════════════
+document.getElementById('roll-btn').addEventListener('click',doRoll);
+document.getElementById('end-btn').addEventListener('click',doNextTurn);
+document.getElementById('start-btn').addEventListener('click',doStart);
+document.getElementById('reset-btn').addEventListener('click',doReset);
+document.getElementById('apply-cell').addEventListener('click',applyCell);
+document.getElementById('reset-cell').addEventListener('click',resetCell);
+document.getElementById('cell-sel').addEventListener('change',loadCellEditor);
+document.getElementById('buy-btn').addEventListener('click',()=>{
+  const p=G.players[G.cur]; const cell=G.pendingBuy?.cell;
+  if(!p||!cell) return;
+  p.money-=cell.p; cell.owner=p.id; recordTxn(p,-cell.p,'Achat: '+cell.n);
+  glog(p.name+' achète '+cell.ico+' '+cell.n+' pour '+cell.p+'$.','a');
+  toast(cell.n+' achetée !','ok');
+  hideBuyBar(); refreshOwners(); renderPlayers(); updBtns(); broadcast();
+  checkAutoEnd();
+});
+document.getElementById('skip-btn').addEventListener('click',()=>{ hideBuyBar(); updBtns(); });
+document.getElementById('lc-name').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmAddLocal(); });
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+buildBoard();
+renderPlayers();
+updBtns();
+
+
+// ══════════════════════════════════════════════
+// ITEM 4 — TRANSACTION HISTORY
+// ══════════════════════════════════════════════
+function recordTxn(p, amount, label){
+  if(!p.txns) p.txns=[];
+  p.txns.push({
+    ts: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    amount, label
+  });
+}
+function showTxnHistory(playerIdx){
+  const p=G.players[playerIdx]; if(!p) return;
+  document.getElementById('txn-sub').textContent=p.emoji+' '+p.name+' — Solde: '+p.money+'$';
+  const body=document.getElementById('txn-body');
+  body.innerHTML='';
+  if(!p.txns||!p.txns.length){
+    body.innerHTML='<div style="text-align:center;color:var(--muted);padding:14px;font-size:.74rem">Aucune transaction.</div>';
+  } else {
+    [...p.txns].reverse().forEach(t=>{
+      const d=document.createElement('div'); d.className='txn-entry';
+      const cls=t.amount>=0?'txn-pos':'txn-neg';
+      const sign=t.amount>=0?'+':'';
+      d.innerHTML='<span style="color:var(--muted);flex-shrink:0">'+t.ts+'</span>'
+        +'<span style="flex:1;margin:0 8px;color:var(--text)">'+t.label+'</span>'
+        +'<span class="'+cls+'">'+sign+t.amount+'$</span>';
+      body.appendChild(d);
+    });
+  }
+  openModal('modal-txn');
+}
+
+// ══════════════════════════════════════════════
+// ITEM 4 (bis) — MORTGAGE SYSTEM
+// ══════════════════════════════════════════════
+function mortgageProperty(cellIdx){
+  const cell=G.board[cellIdx];
+  const p=G.players[G.cur];
+  if(!cell||!p||cell.owner!==p.id){ toast('Tu ne possèdes pas cette propriété !','w'); return; }
+  if(cell.mortgaged){
+    const cost=Math.round(cell.p*0.55);
+    if(p.money<cost){ toast('Pas assez pour lever l\'hypothèque ('+cost+'$).','d'); return; }
+    p.money-=cost; cell.mortgaged=false;
+    recordTxn(p,-cost,'Lever hypothèque: '+cell.n);
+    glog(p.name+' lève l\'hypothèque de '+cell.n+' (−'+cost+'$).','a');
+    toast('Hypothèque levée — '+cell.n,'ok');
+  } else {
+    if((cell.houses||0)>0){ toast('Vends d\'abord tes maisons !','w'); return; }
+    const gain=Math.round(cell.p*0.5);
+    p.money+=gain; cell.mortgaged=true;
+    recordTxn(p,gain,'Hypothèque: '+cell.n);
+    glog(p.name+' hypothèque '+cell.n+' (+'+gain+'$).','w');
+    toast(cell.n+' hypothéquée (+'+gain+'$).','w');
+  }
+  renderPlayers(); buildBoard(); broadcast();
+}
+
+function sellHouse(cellIdx){
+  const cell=G.board[cellIdx];
+  const p=G.players[G.cur];
+  if(!cell||!p||cell.owner!==p.id) return;
+  if(!(cell.houses>0)){ toast('Aucune maison à vendre.','w'); return; }
+  const refund=Math.round(cell.p*0.25);
+  p.money+=refund; cell.houses--;
+  if(cell.houses<5) cell.r=Math.max(cell._baseRent||cell.r, Math.round((cell._baseRent||cell.r)*Math.pow(1.5,cell.houses)));
+  recordTxn(p,refund,'Vente maison: '+cell.n);
+  glog(p.name+' vend une maison sur '+cell.n+' (+'+refund+'$).','a');
+  toast('Maison vendue (+'+refund+'$)','ok');
+  renderPlayers(); buildBoard(); broadcast();
+}
+
+function buyHouse(cellIdx){
+  const cell=G.board[cellIdx];
+  const p=G.players[G.cur];
+  if(!cell||!p||cell.owner!==p.id){ toast('Tu ne possèdes pas cette propriété !','w'); return; }
+  if(cell.mortgaged){ toast('Propriété hypothéquée !','w'); return; }
+  if(!cell.houses) cell.houses=0;
+  if(cell.houses>=5){ toast('Hôtel déjà construit !','w'); return; }
+  const cost=Math.round(cell.p*0.5);
+  if(p.money<cost){ toast('Pas assez ('+cost+'$) pour construire.','d'); return; }
+  if(!cell._baseRent) cell._baseRent=cell.r;
+  p.money-=cost; cell.houses++;
+  cell.r=Math.round(cell._baseRent*Math.pow(1.5,cell.houses));
+  const type=cell.houses>=5?'hôtel':'maison n°'+cell.houses;
+  recordTxn(p,-cost,'Construction '+type+': '+cell.n);
+  glog(p.name+' construit '+type+' sur '+cell.n+' (−'+cost+'$).','a');
+  toast('Construction: '+type,'ok');
+  renderPlayers(); buildBoard(); broadcast();
+}
+
+// ══════════════════════════════════════════════
+// ITEM 5 — UNDO
+// ══════════════════════════════════════════════
+let _undoSnap=null;
+function saveUndoSnap(){
+  _undoSnap=JSON.stringify({
+    board:G.board, players:G.players.map(p=>Object.assign({},p,{txns:p.txns?[...p.txns]:[]})),
+    cur:G.cur, rolled:G.rolled
+  });
+}
+function undoLastAction(){
+  if(!_undoSnap){ toast('Rien à annuler.','w'); return; }
+  if(!confirm('Annuler la dernière action ?')) return;
+  const s=JSON.parse(_undoSnap);
+  G.board=s.board; G.players=s.players; G.cur=s.cur; G.rolled=s.rolled;
+  _undoSnap=null;
+  buildBoard(); renderPlayers(); updBtns();
+  toast('Action annulée.','i'); glog('↩ Action annulée.','i');
+}
+
+// ══════════════════════════════════════════════
+// ITEM 7 — KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  switch(e.key){
+    case 'r': case 'R':
+      if(!document.getElementById('roll-btn').disabled) doRoll(); break;
+    case 'Enter':
+      if(!document.getElementById('end-btn').disabled) doNextTurn(); break;
+    case 's': case 'S': showStats(); break;
+    case 'u': case 'U': undoLastAction(); break;
+    case 'h': case 'H': if(G.started){ showTxnHistory(G.cur); } break;
+    case 'Escape':
+      document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open')); break;
+  }
+});
+
+// ══════════════════════════════════════════════
+// ITEM 7 (bis) — THEMES
+// ══════════════════════════════════════════════
+function setTheme(t){
+  document.body.className=''; 
+  if(t!=='dark') document.body.classList.add('theme-'+t);
+  document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('on'));
+  const map={'dark':'🌑','green':'🟢','blue':'🔵','purple':'🟣','red':'🔴'};
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    if(b.textContent.trim()===map[t]) b.classList.add('on');
+  });
+}
+
+// ══════════════════════════════════════════════
+// ITEM 6 — STATS MODAL (live)
+// ══════════════════════════════════════════════
+function showStats(){
+  if(!G.players.length){ toast('Aucun joueur.','w'); return; }
+  const propCount={};
+  G.board.forEach(c=>{ if(c.owner) propCount[c.owner]=(propCount[c.owner]||0)+1; });
+  const body=document.getElementById('stats-body'); body.innerHTML='';
+  // Sort by money
+  const sorted=[...G.players].sort((a,b)=>b.money-a.money);
+  sorted.forEach((p,rank)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:rgba(6,9,15,.6);border-radius:10px;border:1px solid var(--border);margin-bottom:8px;overflow:hidden';
+    const medal=['🥇','🥈','🥉'][rank]||'';
+    div.innerHTML=`
+      <div style="padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <div style="width:12px;height:12px;border-radius:999px;background:${p.color}"></div>
+        <b>${p.emoji} ${p.name}</b> ${medal}
+        ${p.bust?'<span style="font-size:.62rem;padding:1px 6px;background:rgba(239,68,68,.15);color:#fca5a5;border-radius:999px;margin-left:auto">💀 Faillite</span>':''}
+      </div>
+      <div class="stat-row"><span>💰 Argent</span><span>${p.money}$</span></div>
+      <div class="stat-row"><span>🏠 Propriétés</span><span>${propCount[p.id]||0}</span></div>
+      <div class="stat-row"><span>📍 Case actuelle</span><span>${G.board[p.pos]?.n||'?'}</span></div>
+      <div class="stat-row"><span>📝 Transactions</span><span>${(p.txns||[]).length}</span></div>
+      <div class="stat-row"><span>⛓️ En prison</span><span>${p.jailed?'Oui':'Non'}</span></div>
+    `;
+    div.style.cursor='pointer';
+    div.addEventListener('click',()=>{ closeModal('modal-stats'); showTxnHistory(G.players.indexOf(p)); });
+    body.appendChild(div);
+  });
+  body.innerHTML+='<div style="font-size:.62rem;color:var(--muted);text-align:center;margin-top:4px">Clic sur un joueur = voir ses transactions</div>';
+  openModal('modal-stats');
+}
+
+// ══════════════════════════════════════════════
+// ITEM 9 — ENDGAME PODIUM STATS
+// ══════════════════════════════════════════════
+function showEndGameStats(winner){
+  const propCount={};
+  G.board.forEach(c=>{ if(c.owner) propCount[c.owner]=(propCount[c.owner]||0)+1; });
+  const sorted=[...G.players].sort((a,b)=>(b.bust?-1:1)-(a.bust?-1:1)||b.money-a.money);
+  const body=document.getElementById('endgame-body');
+  // Podium (top 3)
+  const podiumPlayers=sorted.slice(0,3);
+  const order=[1,0,2]; // display order: 2nd, 1st, 3rd
+  let podiumHtml='<div class="podium-wrap">';
+  order.forEach(oi=>{
+    const p=podiumPlayers[oi];
+    if(!p){ podiumHtml+='<div class="podium-slot"></div>'; return; }
+    const heights=['podium-1','podium-2','podium-3'];
+    const medals=['🥇','🥈','🥉'];
+    podiumHtml+=`<div class="podium-slot">
+      <div class="podium-name">${p.emoji} ${p.name}</div>
+      <div class="podium-money">${p.money}$</div>
+      <div class="podium-props">🏠×${propCount[p.id]||0}</div>
+      <div class="podium-block ${heights[oi]}">${medals[oi]}</div>
+    </div>`;
+  });
+  podiumHtml+='</div>';
+  // Full table
+  let tableHtml='<div style="background:rgba(6,9,15,.6);border-radius:10px;border:1px solid var(--border);overflow:hidden">';
+  sorted.forEach((p,i)=>{
+    const medals=['🥇','🥈','🥉'];
+    const medal=medals[i]||('#'+(i+1));
+    tableHtml+=`<div class="stat-row">
+      <span>${medal} <span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${p.color};vertical-align:middle;margin:0 4px"></span>${p.emoji} ${p.name}${p.bust?' 💀':''}</span>
+      <span>${p.money}$ &nbsp;🏠${propCount[p.id]||0}</span>
+    </div>`;
+  });
+  tableHtml+='</div>';
+  body.innerHTML=podiumHtml+tableHtml;
+  openModal('modal-endgame');
+}
+
+// ══════════════════════════════════════════════
+// ITEM 2 — PROPERTY DETAIL MODAL
+// ══════════════════════════════════════════════
+function showPropModal(cellIdx){
+  const cell=G.board[cellIdx]; if(!cell) return;
+  const owner=G.players.find(p=>p.id===cell.owner);
+  const curP=G.players[G.cur];
+  const isMine=cell.owner===curP?.id;
+  document.getElementById('prop-title').textContent=(cell.ico||'🏠')+' '+cell.n;
+  const body=document.getElementById('prop-body');
+  let housesHtml='';
+  if((cell.houses||0)>=5) housesHtml='<div style="font-size:.8rem;color:#ef4444;font-weight:700;margin-top:4px">🏨 HÔTEL</div>';
+  else if(cell.houses>0) housesHtml='<div style="margin-top:4px">'+'🏠'.repeat(cell.houses||0)+'</div>';
+  body.innerHTML=`
+    <div style="border-radius:10px;overflow:hidden;margin-bottom:10px">
+      <div class="prop-strip-header" style="background:${cell.c||'#333'}">
+        <div style="font-size:2rem">${cell.ico||'🏠'}</div>
+        <div style="font-size:.95rem;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)">${cell.n}</div>
+        ${cell.mortgaged?'<div style="background:rgba(239,68,68,.9);border-radius:4px;padding:1px 6px;font-size:.65rem;font-weight:800;display:inline-block;margin-top:4px">HYPOTHÉQUÉE</div>':''}
+        ${housesHtml}
+      </div>
+      <div class="prop-sheet">
+        <div class="stat-row"><span>Type</span><span style="text-transform:capitalize">${cell.t}</span></div>
+        <div class="stat-row"><span>💰 Prix d'achat</span><span>${cell.p||0}$</span></div>
+        <div class="stat-row"><span>💸 Loyer actuel</span><span>${cell.r||0}$</span></div>
+        <div class="stat-row"><span>🏗️ Constructions</span><span>${cell.houses||0}/5</span></div>
+        <div class="stat-row"><span>👤 Propriétaire</span><span>${owner?owner.emoji+' '+owner.name:'Libre'}</span></div>
+        ${isMine?'<div class="stat-row"><span>📥 Valeur hypothèque</span><span>'+Math.round(cell.p*.5)+'$</span></div>':''}
+      </div>
+    </div>`;
+  const actEl=document.getElementById('prop-actions'); actEl.innerHTML='';
+  if(isMine && cell.t==='property' && !cell.mortgaged && (cell.houses||0)<5){
+    const cost=Math.round(cell.p*.5);
+    const b=document.createElement('button');
+    b.className='btn btn-primary btn-sm';
+    b.textContent='🏗️ Construire ('+cost+'$)';
+    b.onclick=()=>{ buyHouse(cellIdx); closeModal('modal-prop'); };
+    actEl.appendChild(b);
+  }
+  if(isMine && cell.t==='property' && (cell.houses||0)>0){
+    const b=document.createElement('button');
+    b.className='btn btn-yellow btn-sm';
+    b.textContent='🔨 Vendre maison';
+    b.onclick=()=>{ sellHouse(cellIdx); closeModal('modal-prop'); };
+    actEl.appendChild(b);
+  }
+  if(isMine && ['property','railroad','utility'].includes(cell.t)){
+    const b=document.createElement('button');
+    b.className='btn btn-secondary btn-sm';
+    b.textContent=cell.mortgaged?'📤 Lever hypothèque ('+Math.round(cell.p*.55)+'$)':'📥 Hypothéquer (+'+Math.round(cell.p*.5)+'$)';
+    b.onclick=()=>{ mortgageProperty(cellIdx); closeModal('modal-prop'); };
+    actEl.appendChild(b);
+  }
+  if(isMine){
+    const b=document.createElement('button');
+    b.className='btn btn-blue btn-sm';
+    b.textContent='💳 Transactions';
+    b.onclick=()=>{ closeModal('modal-prop'); showTxnHistory(G.cur); };
+    actEl.appendChild(b);
+  }
+  const bc=document.createElement('button');
+  bc.className='btn btn-secondary btn-sm'; bc.textContent='Fermer';
+  bc.onclick=()=>closeModal('modal-prop');
+  actEl.appendChild(bc);
+  openModal('modal-prop');
+}
+
+// ══════════════════════════════════════════════
+// ITEM 2 — PION BOUNCE ANIMATION
+// ══════════════════════════════════════════════
+function animPawnArrive(pos){
+  setTimeout(()=>{
+    const pa=document.getElementById('pa-'+pos);
+    if(!pa) return;
+    pa.querySelectorAll('.pawn').forEach(pw=>{
+      pw.classList.add('moving');
+      setTimeout(()=>pw.classList.remove('moving'),500);
+    });
+  },50);
+}
+
+// ══════════════════════════════════════════════
+// ITEM 9 — TIMER SYSTEM
+// ══════════════════════════════════════════════
+let _timerInterval=null, _timerMax=90;
+function startTimer(){
+  clearInterval(_timerInterval);
+  if(_timerMax>=9999) return;
+  let t=_timerMax;
+  const tick=()=>{
+    const pct=t/_timerMax*100;
+    const bar=document.getElementById('timer-bar');
+    const num=document.getElementById('timer-num');
+    if(bar){ bar.style.width=pct+'%'; bar.classList.toggle('urgent',t<=15); }
+    if(num) num.textContent=t+'s';
+    if(t<=0){ clearInterval(_timerInterval); glog('⏰ Temps écoulé ! Tour suivant.','w'); doNextTurn(); return; }
+    t--;
+  };
+  tick(); _timerInterval=setInterval(tick,1000);
+}
+function stopTimer(){
+  clearInterval(_timerInterval);
+  const b=document.getElementById('timer-bar');
+  const n=document.getElementById('timer-num');
+  if(b){b.style.width='100%';b.classList.remove('urgent');}
+  if(n) n.textContent='—';
+}
+function showTimerConfig(){
+  const v=prompt('Durée du timer par tour (secondes, 0=désactivé):',_timerMax>=9999?0:_timerMax);
+  if(v===null) return;
+  const val=parseInt(v,10);
+  if(isNaN(val)||val<0){ toast('Valeur invalide.','d'); return; }
+  _timerMax=val===0?9999:val;
+  toast(val===0?'Timer désactivé.':'Timer réglé : '+val+'s / tour','ok');
+}
+
+
+// ── CHAT ──
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim(); if(!msg) return;
+  const p=G.players.length?G.players[G.cur]:{name:'Spectateur',emoji:'👤',color:'#9ca3af'};
+  const obj={type:'chat',room:G.room||'local',name:p.emoji+' '+p.name,text:msg,color:p.color};
+  appendChat(obj);
+  if(G.wsOk&&G.ws) G.ws.send(JSON.stringify(obj));
+  inp.value='';
+}
+function appendChat(msg){
+  const el=document.getElementById('chat-log'); if(!el) return;
+  const d=document.createElement('div'); d.className='chat-msg';
+  d.innerHTML='<span class="cm-author" style="color:'+(msg.color||'var(--accent)')+'">'+msg.name+':</span>'+msg.text;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const ci=document.getElementById('chat-input');
+  if(ci) ci.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
+});
+
+
+// ══════════════════════════════════════════════
+// AUTO-END SYSTEM
+// ══════════════════════════════════════════════
+
+// Track consecutive turns without net worth change (stalemate detection)
+let _stalemateTurns = 0;
+let _lastNetWorthSnapshot = '';
+
+function getNetWorthSnapshot(){
+  return G.players.map(p=>{
+    const props = G.board.filter(c=>c.owner===p.id);
+    const propVal = props.reduce((s,c)=>s+(c.p||0)+(c.houses||0)*Math.round((c.p||0)*.5),0);
+    return p.id+':'+(p.money+propVal);
+  }).join('|');
+}
+
+function checkAutoEnd(){
+  if(!G.started) return;
+
+  // Force bankruptcy on negative money
+  G.players.forEach(p=>{
+    if(!p.bust && p.money < 0){
+      p.money = 0; p.bust = true;
+      // Transfer properties to bank
+      G.board.forEach(c=>{ if(c.owner===p.id){ delete c.owner; c.houses=0; c.mortgaged=false; } });
+      glog('💀 '+p.name+' est en faillite (argent négatif) !','d');
+      toast(p.emoji+' '+p.name+' est en faillite !','d');
+    }
+  });
+
+  const alive = G.players.filter(p=>!p.bust);
+
+  // 1. Classic: only 1 alive
+  if(alive.length === 1){
+    endGame(alive[0]); return;
+  }
+  // 2. Nobody alive
+  if(alive.length === 0){
+    endGame(G.players.reduce((a,b)=>a.money>b.money?a:b)); return;
+  }
+
+  // 3. Check if a player is completely blocked (can't pay next rent/tax AND can't buy anything)
+  alive.forEach(p=>{
+    if(p.bust) return;
+    const minRentOnBoard = G.board
+      .filter(c=>c.owner && c.owner!==p.id && !c.mortgaged)
+      .reduce((mn,c)=>Math.min(mn,c.r||0), Infinity);
+    const minTax = G.board
+      .filter(c=>c.t==='tax')
+      .reduce((mn,c)=>Math.min(mn,c.r||0), Infinity);
+    const lowestDanger = Math.min(
+      isFinite(minRentOnBoard)?minRentOnBoard:9999,
+      isFinite(minTax)?minTax:9999
+    );
+    const ownsAnything = G.board.some(c=>c.owner===p.id && !c.mortgaged);
+    const canMortgage  = G.board.some(c=>c.owner===p.id && !c.mortgaged);
+    // If player has 0 money, owns nothing, can't mortgage → bust them now
+    if(p.money <= 0 && !ownsAnything && !canMortgage && !p.bust){
+      p.bust = true; p.money = 0;
+      glog('💀 '+p.name+' ne peut plus jouer (aucune ressource).','d');
+      toast(p.emoji+' '+p.name+' éliminé (aucune ressource) !','d');
+    }
+  });
+
+  // Re-check alive after above
+  const alive2 = G.players.filter(p=>!p.bust);
+  if(alive2.length === 1){ endGame(alive2[0]); return; }
+  if(alive2.length === 0){ endGame(G.players.reduce((a,b)=>a.money>b.money?a:b)); return; }
+
+  // 4. Stalemate detection — if net worth hasn't changed for 20 full rounds
+  const snap = getNetWorthSnapshot();
+  if(snap === _lastNetWorthSnapshot){
+    _stalemateTurns++;
+    if(_stalemateTurns >= alive2.length * 20){
+      // Force end: richest player wins
+      const richest = alive2.reduce((a,b)=>{
+        const aw = a.money + G.board.filter(c=>c.owner===a.id).reduce((s,c)=>s+(c.p||0),0);
+        const bw = b.money + G.board.filter(c=>c.owner===b.id).reduce((s,c)=>s+(c.p||0),0);
+        return aw>=bw?a:b;
+      });
+      glog('⏸️ Stalemate détecté après '+_stalemateTurns+' tours sans changement.','w');
+      endGame(richest); return;
+    }
+  } else {
+    _stalemateTurns = 0;
+    _lastNetWorthSnapshot = snap;
+  }
+
+  // 5. Skip busted players in turn queue (done in doNextTurn already, but ensure cur is valid)
+  if(G.players[G.cur]?.bust){
+    doNextTurn();
+  }
+}
+
+// Override checkBust to call checkAutoEnd
+function checkBust(p){
+  if(p.money <= 0 && !p.bust){
+    p.bust = true; p.money = 0;
+    // Release properties to bank
+    G.board.forEach(c=>{ if(c.owner===p.id){ delete c.owner; c.houses=0; c.mortgaged=false; } });
+    glog('💀 '+p.name+' est en faillite !','d');
+    toast(p.emoji+' '+p.name+' est en faillite !','d');
+    refreshOwners(); buildBoard();
+  }
+  checkAutoEnd();
+}
+
+</script>
+
+<!-- ══ TRANSACTION HISTORY MODAL ══ -->
+<div class="modal-bg" id="modal-txn">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-txn')">✕</button>
+    <div class="modal-title">💳 Transactions</div>
+    <div class="modal-sub" id="txn-sub">Joueur</div>
+    <div id="txn-body" style="max-height:300px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ══ PROPERTY DETAIL MODAL ══ -->
+<div class="modal-bg" id="modal-prop">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-prop')">✕</button>
+    <div class="modal-title" id="prop-title">Propriété</div>
+    <div id="prop-body"></div>
+    <div class="btn-row" id="prop-actions"></div>
+  </div>
+</div>
+
+<!-- ══ STATS MODAL ══ -->
+<div class="modal-bg" id="modal-stats">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-stats')">✕</button>
+    <div class="modal-title">📊 Statistiques</div>
+    <div class="modal-sub">État actuel de la partie</div>
+    <div id="stats-body"></div>
+  </div>
+</div>
+
+<!-- ══ END GAME STATS MODAL ══ -->
+<div class="modal-bg" id="modal-endgame">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title" style="text-align:center;font-size:1.3rem">🏆 Partie terminée !</div>
+    <div id="endgame-body"></div>
+    <div class="btn-row" style="justify-content:center;margin-top:16px">
+      <button class="btn btn-primary" onclick="backToLobby()">🏠 Retour au lobby</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-endgame')">Voir le plateau</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
