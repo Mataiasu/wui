@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neopoly - Jeu de Monopoly</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,sans-serif;background:#1a1a2e;color:#eee;min-height:100vh}
+        .header{background:#16213e;padding:15px;text-align:center}
+        .header h1{color:#e94560}
+        .game-container{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;padding:20px}
+        .board{display:grid;grid-template-columns:repeat(11,1fr);gap:2px;background:#0f3460;padding:4px;border-radius:8px}
+        .cell{background:#1a1a2e;padding:8px;text-align:center;font-size:11px;border-radius:4px;min-width:60px;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+        .cell.corner{min-width:80px;min-height:80px;font-weight:bold}
+        .cell .name{font-size:10px;word-break:break-word}
+        .cell .price{color:#4ecca3;font-size:9px}
+        .cell .owner{position:absolute;top:2px;left:2px;font-size:8px;padding:1px 3px;border-radius:3px}
+        .cell .owner.p1{background:#e94560}
+        .cell .owner.p2{background:#0f3460}
+        .cell .owner.p3{background:#4ecca3}
+        .cell .owner.p4{background:#f9a826}
+        .side-panel{background:#16213e;padding:20px;border-radius:8px;min-width:300px}
+        .player-info{margin-bottom:15px;padding:10px;background:#0f3460;border-radius:6px}
+        .player-info h3{margin-bottom:5px}
+        .player-info p{font-size:13px}
+        .controls{margin-top:15px}
+        button{background:#e94560;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;margin:5px}
+        button:hover{background:#ff6b6b}
+        button:disabled{background:#555;cursor:not-allowed}
+        .dice-area{text-align:center;margin:20px 0}
+        .dice{font-size:48px;letter-spacing:10px}
+        .log-area{background:#0f3460;padding:15px;border-radius:6px;margin-top:15px;max-height:200px;overflow-y:auto;font-size:12px}
+        .log-area p{margin:3px 0;padding:5px;background:#1a1a2e;border-radius:3px}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);justify-content:center;align-items:center;z-index:1000}
+        .modal.show{display:flex}
+        .modal-content{background:#16213e;padding:30px;border-radius:10px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
+        .modal-content h2{color:#e94560;margin-bottom:15px}
+        .modal-content label{display:block;margin:10px 0 5px}
+        .modal-content input,.modal-content select{width:100%;padding:10px;border-radius:6px;border:1px solid #0f3460;background:#1a1a2e;color:#eee}
+        .modal-content .btn-group{margin-top:20px;display:flex;gap:10px;justify-content:flex-end}
+        .cell-editor{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .card{background:#0f3460;padding:15px;border-radius:8px;text-align:center}
+        .card h3{color:#4ecca3;margin-bottom:10px}
+        .card .amount{font-size:32px;color:#e94560;font-weight:bold}
+        .admin-panel{background:#16213e;padding:20px;border-radius:8px;margin-top:20px}
+        .admin-panel h3{color:#f9a826;margin-bottom:15px}
+        .admin-panel select,.admin-panel input{width:100%;padding:10px;margin:5px 0;border-radius:6px;border:1px solid #0f3460;background:#1a1a2e;color:#eee}
+        .property-card{background:linear-gradient(135deg,#0f3460,#16213e);border-radius:10px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+        .property-header{height:40px;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,0.5)}
+        .property-body{padding:15px;text-align:center}
+        .property-name{font-size:16px;margin-bottom:5px;font-weight:bold}
+        .property-rent{color:#4ecca3;font-size:18px;font-weight:bold}
+        .property-mortgage{color:#e94560;font-size:12px;margin-top:5px}
+        .color-brown{background:#8B4513}
+        .color-lightblue{background:#87CEEB}
+        .color-pink{background:#FF69B4}
+        .color-orange{background:#FFA500}
+        .color-red{background:#FF0000}
+        .color-yellow{background:#FFD700;color:#000}
+        .color-green{background:#228B22}
+        .color-blue{background:#0000FF}
+        .color-railroad{background:#333}
+        .color-utility{background:#666}
+        .hidden{display:none}
+        .highlight{animation:pulse 1s infinite}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>NEOPOLY</h1>
+        <p>Jeu de Monopoly optimisé - Version finale</p>
+    </div>
+    <div class="game-container">
+        <div class="board" id="board"></div>
+        <div class="side-panel">
+            <div class="dice-area">
+                <div class="dice" id="dice">🎲 🎲</div>
+                <button id="rollBtn" onclick="rollDice()">Lancer les dés</button>
+            </div>
+            <div id="currentPlayerPanel"></div>
+            <div class="controls">
+                <button onclick="buyProperty()" id="buyBtn">Acheter</button>
+                <button onclick="endTurn()" id="endBtn">Fin du tour</button>
+                <button onclick="toggleAdmin()">Admin</button>
+                <button onclick="saveGame()">Sauvegarder</button>
+                <button onclick="loadGame()">Charger</button>
+            </div>
+            <div class="log-area" id="gameLog"></div>
+            <div class="admin-panel hidden" id="adminPanel">
+                <h3>Panneau Admin</h3>
+                <label>Modifier une case:</label>
+                <select id="cell-sel" onchange="loadCellEditor()"></select>
+                <div id="cellEditor" class="cell-editor hidden"></div>
+                <button onclick="saveCellEdit()" id="saveCellBtn" class="hidden">Enregistrer</button>
+                <hr style="margin:15px 0;border-color:#0f3460">
+                <label>Modifier un joueur:</label>
+                <select id="player-sel" onchange="loadPlayerEditor()"></select>
+                <div id="playerEditor" class="hidden"></div>
+                <button onclick="savePlayerEdit()" id="savePlayerBtn" class="hidden">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="cardModal">
+        <div class="modal-content" id="cardModalContent"></div>
+    </div>
+    <script>
+const COLORS=['brown','lightblue','pink','orange','red','yellow','green','blue','railroad','utility'];
+const CELLS=[
+    {name:'Départ',type:'corner',price:0,rent:200,color:'special'},
+    {name:'Rue de la Paix',type:'property',price:200,rent:20,color:'brown'},
+    {name:'Chance',type:'chance',price:0,rent:0,color:'special'},
+    {name:'Boulevard Haussmann',type:'property',price:200,rent:30,color:'brown'},
+    {name:'Impôts',type:'tax',price:0,rent:200,color:'special'},
+    {name:'Gare du Nord',type:'railroad',price:200,rent:25,color:'railroad'},
+    {name:'Rue de la République',type:'property',price:320,rent:35,color:'lightblue'},
+    {name:'Coffre',type:'chest',price:0,rent:0,color:'special'},
+    {name:'Rue de Rivoli',type:'property',price:320,rent:40,color:'lightblue'},
+    {name:'Place Vendôme',type:'property',price:360,rent:45,color:'lightblue'},
+    {name:'Prison',type:'corner',price:0,rent:0,color:'special'},
+    {name:'Avenue Montaigne',type:'property',price:400,rent:50,color:'pink'},
+    {name:'Compagnie des Eaux',type:'utility',price:150,rent:4,color:'utility'},
+    {name:'Faubourg Saint-Honoré',type:'property',price:400,rent:55,color:'pink'},
+    {name:'Boulevard Saint-Germain',type:'property',price:440,rent:60,color:'pink'},
+    {name:'Gare de Lyon',type:'railroad',price:200,rent:25,color:'railroad'},
+    {name:'Rue de Vaugirard',type:'property',price:480,rent:65,color:'orange'},
+    {name:'Chance',type:'chance',price:0,rent:0,color:'special'},
+    {name:'Rue du Commerce',type:'property',price:480,rent:70,color:'orange'},
+    {name:'Avenue de l\'Opéra',type:'property',price:520,rent:75,color:'orange'},
+    {name:'Parking Gratuit',type:'corner',price:0,rent:0,color:'special'},
+    {name:'Champs-Élysées',type:'property',price:560,rent:80,color:'red'},
+    {name:'Coffre',type:'chest',price:0,rent:0,color:'special'},
+    {name:'Avenue de la Liberté',type:'property',price:560,rent:85,color:'red'},
+    {name:'Boulevard de la Madeleine',type:'property',price:600,rent:90,color:'red'},
+    {name:'Gare de l\'Est',type:'railroad',price:200,rent:25,color:'railroad'},
+    {name:'Rue de Belleville',type:'property',price:640,rent:95,color:'yellow'},
+    {name:'Rue de la Roquette',type:'property',price:640,rent:100,color:'yellow'},
+    {name:'Compagnie d\'Électricité',type:'utility',price:150,rent:4,color:'utility'},
+    {name:'Avenue de la Grande Armée',type:'property',price:680,rent:105,color:'yellow'},
+    {name:'Allez en Prison',type:'corner',price:0,rent:0,color:'special'},
+    {name:'Rue de la Pompe',type:'property',price:720,rent:110,color:'green'},
+    {name:'Boulevard de Courcelles',type:'property',price:720,rent:115,color:'green'},
+    {name:'Coffre',type:'chest',price:0,rent:0,color:'special'},
+    {name:'Avenue Foch',type:'property',price:760,rent:120,color:'green'},
+    {name:'Gare Montparnasse',type:'railroad',price:200,rent:25,color:'railroad'},
+    {name:'Chance',type:'chance',price:0,rent:0,color:'special'},
+    {name:'Boulevard Saint-Michel',type:'property',price:800,rent:130,color:'blue'},
+    {name:'Impôts de Luxe',type:'tax',price:0,rent:100,color:'special'},
+    {name:'Place de la Concorde',type:'property',price:800,rent:140,color:'blue'}
+];
+let cells=JSON.parse(JSON.stringify(CELLS));
+let players=[
+    {id:1,name:'Joueur 1',money:1500,pos:0,color:'#e94560',jail:0,properties:[]},
+    {id:2,name:'Joueur 2',money:1500,pos:0,color:'#0f3460',jail:0,properties:[]},
+    {id:3,name:'Joueur 3',money:1500,pos:0,color:'#4ecca3',jail:0,properties:[]},
+    {id:4,name:'Joueur 4',money:1500,pos:0,color:'#f9a826',jail:0,properties:[]}
+];
+let currentPlayer=0,numPlayers=2,turnPhase='roll',editCellIdx=null,editPlayerIdx=null;
+let gameState={cells:[],players:[],currentPlayer:0,numPlayers:2};
+function log(msg){const l=document.getElementById('gameLog');l.innerHTML='<p>'+msg+'</p>'+l.innerHTML}
+function init(){renderBoard();setupAdmin();updatePlayerPanel();log('Neopoly démarré!')}
+function renderBoard(){
+    const b=document.getElementById('board');b.innerHTML='';
+    cells.forEach((c,i)=>{
+        const d=document.createElement('div');
+        d.className='cell'+(c.type==='corner'?' corner':'');
+        d.innerHTML='<span class="name">'+c.name+'</span>';
+        if(c.price>0)d.innerHTML+='<span class="price">'+c.price+'</span>';
+        if(c.owner!==undefined)d.innerHTML+='<span class="owner p'+c.owner+'">P'+c.owner+'</span>';
+        b.appendChild(d);
+    });
+}
+function updatePlayerPanel(){
+    const p=players[currentPlayer];
+    const el=document.getElementById('currentPlayerPanel');
+    el.innerHTML='<div class="player-info"><h3 style="color:'+p.color+'">'+p.name+'</h3><p>Position: '+cells[p.pos].name+'</p><p>Argent: '+p.money+'€</p><p>Propriétés: '+p.properties.length+'</p></div>';
+}
+function renderPlayers(){
+    const sel=document.getElementById('player-sel');
+    sel.innerHTML='';
+    for(let i=0;i<numPlayers;i++){sel.innerHTML+='<option value="'+i+'">'+players[i].name+'</option>'}
+}
+function setupAdmin(){
+    const sel=document.getElementById('cell-sel');
+    sel.innerHTML='';
+    cells.forEach((c,i)=>{sel.innerHTML+='<option value="'+i+'">'+(i+1)+'. '+c.name+'</option>'});
+    renderPlayers();
+}
+function toggleAdmin(){document.getElementById('adminPanel').classList.toggle('hidden')}
+function rollDice(){
+    if(turnPhase!=='roll')return;
+    const d1=Math.floor(Math.random()*6)+1,d2=Math.floor(Math.random()*6)+1;
+    document.getElementById('dice').textContent=String.fromCodePoint(0x1F3B2)+' '+String.fromCodePoint(0x1F3B2);
+    setTimeout(()=>{document.getElementById('dice').textContent=String.fromCodePoint(0x1F3B2+d1-1)+' '+String.fromCodePoint(0x1F3B2+d2-1)},500);
+    log(players[currentPlayer].name+' a fait '+d1+' + '+d2+' = '+(d1+d2));
+    movePlayer(d1+d2);
+    turnPhase='action';
+}
+function movePlayer(steps){
+    const p=players[currentPlayer];
+    if(p.jail>0){p.jail--;log(p.name+' reste en prison ('+p.jail+' tour(s))');turnPhase='action';return}
+    let passedStart=false;
+    for(let i=0;i<steps;i++){
+        p.pos=(p.pos+1)%cells.length;
+        if(p.pos===0){passedStart=true;p.money+=200;log(p.name+' passe par Départ! +200€')}
+    }
+    renderBoard();updatePlayerPanel();handleCell(p.pos,passedStart);
+}
+function handleCell(pos,passedStart){
+    const c=cells[pos],p=players[currentPlayer];
+    log('Atterri sur: '+c.name);
+    if(c.type==='property'||c.type==='railroad'||c.type==='utility'){
+        if(c.owner===undefined){document.getElementById('buyBtn').disabled=false}
+        else if(c.owner!==currentPlayer){payRent(c);turnPhase='done'}
+        else{log('Vous possédez déjà cette case');turnPhase='done'}
+    }else if(c.type==='tax'){p.money-=c.rent;log(p.name+' paie '+c.rent+'€ d\'impôts');turnPhase='done'}
+    else if(c.type==='chance'){doChance(p);turnPhase='done'}
+    else if(c.type==='chest'){doChest(p);turnPhase='done'}
+    else if(c.type==='corner'&&c.name==='Allez en Prison'){p.pos=10;p.jail=3;log(p.name+' va en prison!');renderBoard();updatePlayerPanel();turnPhase='done'}
+    else{turnPhase='done'}
+    document.getElementById('buyBtn').disabled=c.owner!==undefined||c.type!=='property'&&c.type!=='railroad'&&c.type!=='utility';
+}
+function buyProperty(){
+    const c=cells[players[currentPlayer].pos],p=players[currentPlayer];
+    if(c.price===0||c.owner!==undefined||p.money<c.price)return;
+    p.money-=c.price;c.owner=currentPlayer;p.properties.push(players[currentPlayer].pos);
+    log(p.name+' achète '+c.name+' pour '+c.price+'€');
+    renderBoard();updatePlayerPanel();
+    document.getElementById('buyBtn').disabled=true;
+}
+function payRent(c){
+    const p=players[currentPlayer],o=players[c.owner];
+    let rent=c.rent;
+    if(c.type==='railroad'){const cnt=cells.filter(x=>x.type==='railroad'&&x.owner===c.owner).length;rent=25*Math.pow(2,cnt-1)}
+    if(c.type==='utility'){const cnt=cells.filter(x=>x.type==='utility'&&x.owner===c.owner).length;rent=c.rent*(cnt===2?10:4)}
+    p.money-=rent;o.money+=rent;
+    log(p.name+' paie '+rent+'€ de loyer à '+o.name);
+    updatePlayerPanel();
+}
+function doChance(p){
+    const opts=[{t:'Avancez de 4 cases',a:()=>movePlayer(4)},{t:'Reculez de 3 cases',a:()=>p.pos=(p.pos-3+cells.length)%cells.length},{t:'Perdez 50€',a:()=>p.money-=50},{t:'Gagnez 100€',a:()=>p.money+=100},{t:'Allez en prison',a:()=>{p.pos=10;p.jail=3}}];
+    const o=opts[Math.floor(Math.random()*opts.length)];
+    log('Chance: '+o.t);o.a();renderBoard();updatePlayerPanel();
+}
+function doChest(p){
+    const opts=[{t:'Banque vous verse 50€',a:()=>p.money+=50},{t:'Frais médicaux -50€',a:()=>p.money-=50},{t:'Héritage +200€',a:()=>p.money+=200},{t:'Amende -30€',a:()=>p.money-=30},{t:'Sortez de prison gratuite',a:()=>{if(p.jail>0)p.jail=0}}];
+    const o=opts[Math.floor(Math.random()*opts.length)];
+    log('Coffre: '+o.t);o.a();renderBoard();updatePlayerPanel();
+}
+function endTurn(){
+    if(turnPhase!=='action'&&turnPhase!=='done')return;
+    do{
+        currentPlayer=(currentPlayer+1)%numPlayers;
+    }while(players[currentPlayer].money<=0&&players[currentPlayer].money>-1500);
+    if(players[currentPlayer].money<=-1500){log(players[currentPlayer].name+' est éliminé!');return}
+    turnPhase='roll';
+    document.getElementById('buyBtn').disabled=true;
+    renderBoard();updatePlayerPanel();
+    log('--- Tour de '+players[currentPlayer].name+' ---');
+}
+function loadCellEditor(){
+    const idx=parseInt(document.getElementById('cell-sel').value);
+    editCellIdx=idx;const c=cells[idx];
+    const ed=document.getElementById('cellEditor');ed.innerHTML='';
+    ed.innerHTML='<label>Nom:</label><input id="ed-name" value="'+c.name+'">';
+    ed.innerHTML+='<label>Type:</label><select id="ed-type"><option'+(c.type==='property'?' selected':'')+' value="property">Property</option><option'+(c.type==='railroad'?' selected':'')+' value="railroad">Railroad</option><option'+(c.type==='utility'?' selected':'')+' value="utility">Utility</option><option'+(c.type==='tax'?' selected':'')+' value="tax">Tax</option><option'+(c.type==='chance'?' selected':'')+' value="chance">Chance</option><option'+(c.type==='chest'?' selected':'')+' value="chest">Chest</option><option'+(c.type==='corner'?' selected':'')+' value="corner">Corner</option></select>';
+    ed.innerHTML+='<label>Prix:</label><input type="number" id="ed-price" value="'+c.price+'">';
+    ed.innerHTML+='<label>Loyer:</label><input type="number" id="ed-rent" value="'+c.rent+'">';
+    ed.innerHTML+='<label>Couleur:</label><select id="ed-color"><option'+(c.color==='special'?' selected':'')+' value="special">Special</option>'+COLORS.map(x=>'<option'+(c.color===x?' selected':'')+' value="'+x+'">'+x+'</option>').join('')+'</select>';
+    ed.classList.remove('hidden');
+    document.getElementById('saveCellBtn').classList.remove('hidden');
+}
+function saveCellEdit(){
+    if(editCellIdx===null)return;
+    const c=cells[editCellIdx];
+    c.name=document.getElementById('ed-name').value;
+    c.type=document.getElementById('ed-type').value;
+    c.price=parseInt(document.getElementById('ed-price').value)||0;
+    c.rent=parseInt(document.getElementById('ed-rent').value)||0;
+    c.color=document.getElementById('ed-color').value;
+    renderBoard();setupAdmin();log('Case '+editCellIdx+' modifiée');
+}
+function loadPlayerEditor(){
+    const idx=parseInt(document.getElementById('player-sel').value);
+    editPlayerIdx=idx;const p=players[idx];
+    const ed=document.getElementById('playerEditor');ed.innerHTML='';
+    ed.innerHTML='<label>Nom:</label><input id="ped-name" value="'+p.name+'">';
+    ed.innerHTML+='<label>Argent:</label><input type="number" id="ped-money" value="'+p.money+'">';
+    ed.innerHTML+='<label>Position:</label><input type="number" id="ped-pos" value="'+p.pos+'" min="0" max="'+(cells.length-1)+'">';
+    ed.innerHTML+='<label>Couleur:</label><input type="color" id="ped-color" value="'+p.color+'">';
+    ed.innerHTML+='<label>Prison tours:</label><input type="number" id="ped-jail" value="'+p.jail+'">';
+    ed.classList.remove('hidden');
+    document.getElementById('savePlayerBtn').classList.remove('hidden');
+}
+function savePlayerEdit(){
+    if(editPlayerIdx===null)return;
+    const p=players[editPlayerIdx];
+    p.name=document.getElementById('ped-name').value;
+    p.money=parseInt(document.getElementById('ped-money').value)||0;
+    p.pos=parseInt(document.getElementById('ped-pos').value)||0;
+    p.color=document.getElementById('ped-color').value;
+    p.jail=parseInt(document.getElementById('ped-jail').value)||0;
+    renderBoard();renderPlayers();updatePlayerPanel();log('Joueur '+editPlayerIdx+' modifié');
+}
+function saveGame(){
+    gameState={cells:JSON.parse(JSON.stringify(cells)),players:JSON.parse(JSON.stringify(players)),currentPlayer:currentPlayer,numPlayers:numPlayers};
+    localStorage.setItem('neopoly_save',JSON.stringify(gameState));
+    log('Partie sauvegardée!');
+}
+function loadGame(){
+    const s=localStorage.getItem('neopoly_save');
+    if(!s){log('Aucune sauvegarde trouvée');return}
+    gameState=JSON.parse(s);
+    cells=JSON.parse(JSON.stringify(gameState.cells));
+    players=JSON.parse(JSON.stringify(gameState.players));
+    currentPlayer=gameState.currentPlayer;
+    numPlayers=gameState.numPlayers;
+    renderBoard();setupAdmin();updatePlayerPanel();renderPlayers();
+    log('Partie chargée!');
+}
+window.onload=init;
+    </script>
+</body>
+</html>
